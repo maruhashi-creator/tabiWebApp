@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { format, differenceInYears, differenceInMonths } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -149,8 +150,8 @@ export default function Dashboard() {
         {cat && (
           <div className="card p-5">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-stone-50 rounded-2xl flex items-center justify-center border border-stone-100 flex-shrink-0">
-                <span className="text-3xl">🐱</span>
+              <div className="w-16 h-16 rounded-2xl overflow-hidden border border-stone-100 flex-shrink-0">
+                <Image src="/icon.png" alt="たび" width={64} height={64} className="w-full h-full object-cover" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">

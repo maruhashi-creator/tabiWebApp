@@ -29,6 +29,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ja">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `
+          document.addEventListener('touchmove', function(e) {
+            if (e.touches.length > 1) e.preventDefault();
+          }, { passive: false });
+        `}} />
+      </head>
       <body className={inter.className}>
         <Providers>{children}</Providers>
         <SpeedInsights />

@@ -191,19 +191,23 @@ export default function Dashboard() {
             <p className="text-xs font-semibold text-stone-400 mb-2 px-1">今日のたび</p>
             <div className="card overflow-hidden divide-y divide-stone-50">
               {[...feedings.map((f) => ({
+                id: f.id,
+                source: "feeding" as const,
                 time: f.fedAt,
                 emoji: foodEmoji(f.foodType),
                 label: `${f.foodType ?? "ごはん"} ${f.amount}g`,
                 by: f.user.name,
               })), ...toilets.map((t) => ({
+                id: t.id,
+                source: "toilet" as const,
                 time: t.loggedAt,
                 emoji: t.type === "URINE" ? "💧" : "🌼",
                 label: `${t.count}回`,
                 by: t.user.name,
               }))]
                 .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
-                .map((item, i) => (
-                  <div key={i} className="px-4 py-3 flex items-center gap-3">
+                .map((item) => (
+                  <div key={item.id} className="px-4 py-3 flex items-center gap-3">
                     <span className="text-lg w-7 text-center">{item.emoji}</span>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-stone-700">{item.label}</p>
@@ -212,6 +216,17 @@ export default function Dashboard() {
                     <p className="text-xs text-stone-400 tabular-nums">
                       {format(new Date(item.time), "HH:mm")}
                     </p>
+                    <button
+                      onClick={async () => {
+                        if (!confirm("この記録を削除しますか？")) return;
+                        await fetch(`/api/${item.source}?id=${item.id}`, { method: "DELETE" });
+                        if (item.source === "feeding") setFeedings((prev) => prev.filter((f) => f.id !== item.id));
+                        else setToilets((prev) => prev.filter((t) => t.id !== item.id));
+                      }}
+                      className="text-stone-200 hover:text-red-400 transition-colors text-lg pl-2"
+                    >
+                      ×
+                    </button>
                   </div>
                 ))}
             </div>

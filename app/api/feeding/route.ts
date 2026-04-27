@@ -58,3 +58,15 @@ export async function POST(req: NextRequest) {
   });
   return Response.json(log, { status: 201 });
 }
+
+export async function DELETE(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+  if (!id) return Response.json({ error: "id is required" }, { status: 400 });
+
+  await prisma.feedingLog.delete({ where: { id } });
+  return Response.json({ ok: true });
+}

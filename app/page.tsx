@@ -277,7 +277,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        <p className="text-center text-[10px] text-stone-400 pb-2">5783d99</p>
+        <p className="text-center text-[10px] text-stone-400 pb-2">{process.env.NEXT_PUBLIC_COMMIT_SHA}</p>
       </main>
 
       <BottomNav />

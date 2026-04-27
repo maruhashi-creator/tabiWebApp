@@ -9,13 +9,13 @@ async function main() {
   await prisma.user.upsert({
     where: { email: "owner1@tabi.local" },
     update: {},
-    create: { email: "owner1@tabi.local", password: hashed, name: "パパ" },
+    create: { email: "owner1@tabi.local", password: hashed, name: "おとうさん" },
   });
 
   await prisma.user.upsert({
     where: { email: "owner2@tabi.local" },
     update: {},
-    create: { email: "owner2@tabi.local", password: hashed, name: "ママ" },
+    create: { email: "owner2@tabi.local", password: hashed, name: "おかあさん" },
   });
 
   await prisma.cat.upsert({

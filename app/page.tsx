@@ -225,6 +225,8 @@ export default function Dashboard() {
             <p className="text-xs text-stone-300 mt-1">ごはんやトイレを記録してみてね</p>
           </div>
         )}
+
+        <p className="text-center text-[10px] text-stone-200 pb-2">5783d99</p>
       </main>
 
       <BottomNav />

@@ -7,13 +7,47 @@ import { BottomNav } from "@/components/BottomNav";
 
 interface Cat { id: string; name: string }
 
+const MESSAGES = [
+  "今日のトイレはどうだったかな？",
+  "ちゃんとできてたかな？",
+  "健康のバロメーターだよ",
+  "いつもと違う様子はなかった？",
+  "今日も元気に過ごせたかな",
+  "きれいに出せたかな？",
+  "回数はいつも通り？",
+  "トイレの様子、チェックしてあげてね",
+  "色や量に変化はなかった？",
+  "体の調子を教えてくれてるんだよ",
+  "砂のかき方はいつも通りだった？",
+  "トイレ後、すっきりしてたかな",
+  "今日もトイレできてよかったね",
+  "毎日のチェックが大切だよ",
+  "見守ってくれてありがとう",
+  "いつも気にかけてくれてるんだね",
+  "定期的な確認が安心につながるよ",
+  "何か気になることはあった？",
+  "たびの健康、守ってあげてね",
+  "今日もしっかりチェックできたね",
+  "毎日見てるから変化に気づけるよ",
+  "ちょっとした変化も記録しておこう",
+  "いつもと変わらない日常が一番だよね",
+  "体の中からたびの健康を守ろう",
+  "記録が積み重なると安心感が違うよ",
+  "たびのこと、よく見てるね",
+  "何気ない日常を大切にしてるんだね",
+  "今日もたびのそばにいてくれてありがとう",
+  "健やかな毎日が続きますように",
+  "今日もたびのお世話、お疲れさま",
+];
+
 export default function ToiletPage() {
   const router = useRouter();
+  const [message] = useState(() => MESSAGES[Math.floor(Math.random() * MESSAGES.length)]);
   const [cat, setCat] = useState<Cat | null>(null);
   const [type, setType] = useState<"URINE" | "FECES">("URINE");
   const [count, setCount] = useState(1);
   const [condition, setCondition] = useState("");
-  const [loggedAt, setLoggedAt] = useState(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
+  const [loggedAt, setLoggedAt] = useState(format(new Date(), "HH:mm"));
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -31,7 +65,7 @@ export default function ToiletPage() {
       const res = await fetch("/api/toilet", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ catId: cat.id, type, count, condition, loggedAt }),
+        body: JSON.stringify({ catId: cat.id, type, count, condition, loggedAt: `${format(new Date(), "yyyy-MM-dd")}T${loggedAt}` }),
       });
       if (res.ok) {
         setSuccess(true);
@@ -72,7 +106,7 @@ export default function ToiletPage() {
           </button>
           <div>
             <h1 className="text-base font-bold text-stone-800">たびのトイレ</h1>
-            <p className="text-[10px] text-stone-400">今日のトイレはどうだったかな？</p>
+            <p className="text-[10px] text-stone-400">{message}</p>
           </div>
         </div>
       </header>
@@ -95,7 +129,6 @@ export default function ToiletPage() {
                   }`}
                 >
                   <span className="text-4xl">{emoji}</span>
-                  <span className={`text-sm font-bold ${type === t ? "text-[#F69F9A]" : "text-stone-400"}`}>{label}</span>
                 </button>
               ))}
             </div>
@@ -129,7 +162,8 @@ export default function ToiletPage() {
             <div>
               <label className="block text-xs font-semibold text-stone-400 mb-1.5">時刻</label>
               <input
-                type="datetime-local"
+                type="time"
+                step={600}
                 value={loggedAt}
                 onChange={(e) => setLoggedAt(e.target.value)}
                 className="input"

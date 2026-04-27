@@ -150,8 +150,8 @@ export default function Dashboard() {
           <p className="text-xs font-semibold text-stone-400 mb-2 px-1">今日のようす</p>
           <div className="grid grid-cols-3 gap-2">
             <StatusCard emoji="🥣" label="ごはん" value={fedDone ? `${totalFed}g` : "まだかな"} done={fedDone} />
-            <StatusCard emoji="💧" label="おしっこ" value={urineDone ? `${urineCount}回` : "まだかな"} done={urineDone} />
-            <StatusCard emoji="🌼" label="うんち" value={fecesDone ? `${fecesCount}回` : "まだかな"} done={fecesDone} />
+            <StatusCard emoji="💧" label="トイレ" value={urineDone ? `${urineCount}回` : "まだかな"} done={urineDone} />
+            <StatusCard emoji="🌼" label="トイレ" value={fecesDone ? `${fecesCount}回` : "まだかな"} done={fecesDone} />
           </div>
         </div>
 
@@ -178,7 +178,7 @@ export default function Dashboard() {
               })), ...toilets.map((t) => ({
                 time: t.loggedAt,
                 emoji: t.type === "URINE" ? "💧" : "🌼",
-                label: `${t.type === "URINE" ? "おしっこ" : "うんち"} ${t.count}回`,
+                label: `${t.count}回`,
                 by: t.user.name,
               }))]
                 .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
@@ -216,7 +216,7 @@ function StatusCard({ emoji, label, value, done }: { emoji: string; label: strin
   return (
     <div className="card p-3.5 text-center">
       <p className="text-2xl mb-1.5">{emoji}</p>
-      <p className="text-[10px] text-stone-400 mb-1">{label}</p>
+      {label && <p className="text-[10px] text-stone-400 mb-1">{label}</p>}
       <p className={`text-xs font-bold ${done ? "text-stone-700" : "text-stone-300"}`}>{value}</p>
       {done && <div className="w-1.5 h-1.5 bg-[#F69F9A] rounded-full mx-auto mt-1.5" />}
     </div>

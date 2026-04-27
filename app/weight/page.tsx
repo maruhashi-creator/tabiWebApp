@@ -6,13 +6,47 @@ import { format } from "date-fns";
 import { BottomNav } from "@/components/BottomNav";
 
 interface Cat { id: string; name: string }
+
+const MESSAGES = [
+  "小さな変化を見逃さないで",
+  "今日のたびは何kgかな？",
+  "体重、チェックしてみよう",
+  "変化に気づいてあげてね",
+  "定期的な記録が大切だよ",
+  "前回と比べてどうかな？",
+  "たびの体重、把握してるね",
+  "ちょっとした増減も見逃さないで",
+  "体重管理も愛情のひとつだよ",
+  "今日はどのくらいかな？",
+  "記録することで変化がわかるよ",
+  "健康の指標のひとつだよ",
+  "いつも気にかけてくれてありがとう",
+  "たびの体調を数字で残しておこう",
+  "体重の変化は体のサインかも",
+  "毎日測るの、えらいね",
+  "データが積み重なると安心だよ",
+  "増えすぎても減りすぎても確認が大事",
+  "たびの健康を数字で守ろう",
+  "ちゃんと把握してるって大事なこと",
+  "今日も記録してくれてありがとう",
+  "継続は力なり、記録は愛なり",
+  "たびのこと、本当によく見てるんだね",
+  "獣医さんにも参考になるよ",
+  "数字が教えてくれることがある",
+  "今日のたびは元気そう？",
+  "体重の変化、見守ってあげてね",
+  "毎日の積み重ねが大切だよ",
+  "たびのそばにいてくれてありがとう",
+  "小さな気遣いが大きな安心になるよ",
+];
 interface WeightLog { id: string; weight: number; measuredAt: string; user: { name: string } }
 
 export default function WeightPage() {
   const router = useRouter();
+  const [message] = useState(() => MESSAGES[Math.floor(Math.random() * MESSAGES.length)]);
   const [cat, setCat] = useState<Cat | null>(null);
   const [weight, setWeight] = useState("");
-  const [measuredAt, setMeasuredAt] = useState(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
+  const [measuredAt, setMeasuredAt] = useState(format(new Date(), "HH:mm"));
   const [note, setNote] = useState("");
   const [history, setHistory] = useState<WeightLog[]>([]);
   const [saving, setSaving] = useState(false);
@@ -37,7 +71,7 @@ export default function WeightPage() {
       const res = await fetch("/api/weight", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ catId: cat.id, weight: Number(weight), measuredAt, note }),
+        body: JSON.stringify({ catId: cat.id, weight: Number(weight), measuredAt: `${format(new Date(), "yyyy-MM-dd")}T${measuredAt}`, note }),
       });
       if (res.ok) {
         setSuccess(true);
@@ -78,7 +112,7 @@ export default function WeightPage() {
           </button>
           <div>
             <h1 className="text-base font-bold text-stone-800">たびの体重</h1>
-            <p className="text-[10px] text-stone-400">小さな変化を見逃さないで</p>
+            <p className="text-[10px] text-stone-400">{message}</p>
           </div>
         </div>
       </header>
@@ -104,9 +138,10 @@ export default function WeightPage() {
 
           <div className="card p-5 space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-stone-400 mb-1.5">計測日時</label>
+              <label className="block text-xs font-semibold text-stone-400 mb-1.5">計測時刻</label>
               <input
-                type="datetime-local"
+                type="time"
+                step={600}
                 value={measuredAt}
                 onChange={(e) => setMeasuredAt(e.target.value)}
                 className="input"

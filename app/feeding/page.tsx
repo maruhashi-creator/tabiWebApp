@@ -15,14 +15,48 @@ const FOOD_TYPES = [
   { key: "その他", emoji: "🍽️" },
 ];
 
-const PRESETS = [10, 20, 30, 40, 50, 60, 70, 80];
+const PRESETS = [5, 10, 15, 20, 25, 30, 35, 40];
+
+const MESSAGES = [
+  "何を何グラム食べたかな？",
+  "今日もたびのごはん、ありがとう",
+  "完食してくれたかな？",
+  "おなかすいてた？",
+  "今日もおいしく食べられたかな",
+  "いっぱい食べて元気でいてね",
+  "たびのごはんの時間、ほっとするよね",
+  "残さず食べてくれたかな",
+  "食欲はあった？",
+  "モリモリ食べてくれたかな",
+  "ごはん、喜んでた？",
+  "いつもと同じくらい食べた？",
+  "好きなごはんだった？",
+  "ゆっくり食べてたかな",
+  "ちゃんとお腹いっぱいになったかな",
+  "今日のごはんはどんな感じだった？",
+  "たびのごはん姿、かわいいよね",
+  "食べる顔、見てた？",
+  "今日の分、しっかり食べた？",
+  "ごはんの時間、楽しみにしてたかな",
+  "たびのおなか、満たせたかな？",
+  "毎日のごはん記録、続けてるね",
+  "今日もたびのそばにいてくれてありがとう",
+  "食べムラはなかった？",
+  "ちゃんと水も飲んでた？",
+  "今日もいい子だった？",
+  "ごはん中のたびの顔、想像しただけで笑顔になる",
+  "毎日の積み重ね、ちゃんと残してるね",
+  "たびが元気でいてくれるの、ありがとう",
+  "今日もたびのご飯係、お疲れさま",
+];
 
 export default function FeedingPage() {
   const router = useRouter();
+  const [message] = useState(() => MESSAGES[Math.floor(Math.random() * MESSAGES.length)]);
   const [cat, setCat] = useState<Cat | null>(null);
   const [foodType, setFoodType] = useState("カリカリ");
   const [amount, setAmount] = useState("");
-  const [fedAt, setFedAt] = useState(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
+  const [fedAt, setFedAt] = useState(format(new Date(), "HH:mm"));
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -41,7 +75,7 @@ export default function FeedingPage() {
       const res = await fetch("/api/feeding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ catId: cat.id, foodType, amount: Number(amount), fedAt, note }),
+        body: JSON.stringify({ catId: cat.id, foodType, amount: Number(amount), fedAt: `${format(new Date(), "yyyy-MM-dd")}T${fedAt}`, note }),
       });
       if (res.ok) {
         setSuccess(true);
@@ -82,7 +116,7 @@ export default function FeedingPage() {
           </button>
           <div>
             <h1 className="text-base font-bold text-stone-800">たびのごはん</h1>
-            <p className="text-[10px] text-stone-400">何を何グラム食べたかな？</p>
+            <p className="text-[10px] text-stone-400">{message}</p>
           </div>
         </div>
       </header>
@@ -153,7 +187,8 @@ export default function FeedingPage() {
             <div>
               <label className="block text-xs font-semibold text-stone-400 mb-1.5">時刻</label>
               <input
-                type="datetime-local"
+                type="time"
+                step={600}
                 value={fedAt}
                 onChange={(e) => setFedAt(e.target.value)}
                 className="input"

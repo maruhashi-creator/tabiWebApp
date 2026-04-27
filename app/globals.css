@@ -14,7 +14,7 @@
     @apply bg-white rounded-2xl shadow-sm border border-stone-100;
   }
   .btn-primary {
-    @apply bg-stone-800 hover:bg-stone-900 active:bg-stone-950 text-white font-semibold rounded-xl transition-colors disabled:opacity-40;
+    @apply bg-[#F69F9A] hover:bg-[#E08880] active:bg-[#D07870] text-white font-semibold rounded-xl transition-colors disabled:opacity-40;
   }
   .btn-accent {
     @apply bg-[#F69F9A] hover:bg-[#E08880] active:bg-[#D07870] text-white font-semibold rounded-xl transition-colors disabled:opacity-40;

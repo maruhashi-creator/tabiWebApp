@@ -12,6 +12,7 @@ export interface Anomaly {
 }
 
 export async function GET(req: NextRequest) {
+  try {
   const session = await getServerSession(authOptions);
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -106,4 +107,7 @@ export async function GET(req: NextRequest) {
   }
 
   return Response.json(anomalies);
+  } catch {
+    return Response.json([], { status: 200 });
+  }
 }

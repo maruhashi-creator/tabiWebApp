@@ -55,14 +55,14 @@ export default function Dashboard() {
       if (!c) { setLoading(false); return; }
       setCat(c);
       const [f, t, w, a] = await Promise.all([
-        fetch(`/api/feeding?catId=${c.id}&date=${today}`).then((r) => r.json()),
-        fetch(`/api/toilet?catId=${c.id}&date=${today}`).then((r) => r.json()),
-        fetch(`/api/weight?catId=${c.id}&limit=1`).then((r) => r.json()),
-        fetch(`/api/anomaly?catId=${c.id}`).then((r) => r.json()),
+        fetch(`/api/feeding?catId=${c.id}&date=${today}`).then((r) => r.json()).catch(() => []),
+        fetch(`/api/toilet?catId=${c.id}&date=${today}`).then((r) => r.json()).catch(() => []),
+        fetch(`/api/weight?catId=${c.id}&limit=1`).then((r) => r.json()).catch(() => []),
+        fetch(`/api/anomaly?catId=${c.id}`).then((r) => r.json()).catch(() => []),
       ]);
-      setFeedings(f);
-      setToilets(t);
-      setLatestWeight(w[0] ?? null);
+      setFeedings(Array.isArray(f) ? f : []);
+      setToilets(Array.isArray(t) ? t : []);
+      setLatestWeight(Array.isArray(w) ? (w[0] ?? null) : null);
       setAnomalies(Array.isArray(a) ? a : []);
       setLoading(false);
     }

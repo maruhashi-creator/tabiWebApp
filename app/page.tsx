@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { format, differenceInYears, differenceInMonths } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -47,27 +47,57 @@ export default function Dashboard() {
   const [latestWeight, setLatestWeight] = useState<WeightLog | null>(null);
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [pullY, setPullY] = useState(0);
+  const touchStartY = useRef(0);
+
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    const cats = await fetch("/api/cat").then((r) => r.json());
+    const c: Cat = cats[0];
+    if (!c) { setLoading(false); return; }
+    setCat(c);
+    const [f, t, w, a] = await Promise.all([
+      fetch(`/api/feeding?catId=${c.id}&date=${today}`).then((r) => r.json()).catch(() => []),
+      fetch(`/api/toilet?catId=${c.id}&date=${today}`).then((r) => r.json()).catch(() => []),
+      fetch(`/api/weight?catId=${c.id}&limit=1`).then((r) => r.json()).catch(() => []),
+      fetch(`/api/anomaly?catId=${c.id}`).then((r) => r.json()).catch(() => []),
+    ]);
+    setFeedings(Array.isArray(f) ? f : []);
+    setToilets(Array.isArray(t) ? t : []);
+    setLatestWeight(Array.isArray(w) ? (w[0] ?? null) : null);
+    setAnomalies(Array.isArray(a) ? a : []);
+    setLoading(false);
+    setRefreshing(false);
+  }, [today]);
+
+  useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
-    async function load() {
-      const cats = await fetch("/api/cat").then((r) => r.json());
-      const c: Cat = cats[0];
-      if (!c) { setLoading(false); return; }
-      setCat(c);
-      const [f, t, w, a] = await Promise.all([
-        fetch(`/api/feeding?catId=${c.id}&date=${today}`).then((r) => r.json()).catch(() => []),
-        fetch(`/api/toilet?catId=${c.id}&date=${today}`).then((r) => r.json()).catch(() => []),
-        fetch(`/api/weight?catId=${c.id}&limit=1`).then((r) => r.json()).catch(() => []),
-        fetch(`/api/anomaly?catId=${c.id}`).then((r) => r.json()).catch(() => []),
-      ]);
-      setFeedings(Array.isArray(f) ? f : []);
-      setToilets(Array.isArray(t) ? t : []);
-      setLatestWeight(Array.isArray(w) ? (w[0] ?? null) : null);
-      setAnomalies(Array.isArray(a) ? a : []);
-      setLoading(false);
-    }
-    load();
-  }, [today]);
+    const onTouchStart = (e: TouchEvent) => {
+      touchStartY.current = e.touches[0].clientY;
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (window.scrollY > 0) return;
+      const dy = e.touches[0].clientY - touchStartY.current;
+      if (dy > 0) setPullY(Math.min(dy, 80));
+    };
+    const onTouchEnd = () => {
+      if (pullY >= 70) {
+        setRefreshing(true);
+        load(true);
+      }
+      setPullY(0);
+    };
+    window.addEventListener("touchstart", onTouchStart);
+    window.addEventListener("touchmove", onTouchMove);
+    window.addEventListener("touchend", onTouchEnd);
+    return () => {
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [pullY, load]);
 
   const totalFed = feedings.reduce((s, f) => s + f.amount, 0);
   const urineCount = toilets.filter((t) => t.type === "URINE").reduce((s, t) => s + t.count, 0);
@@ -90,6 +120,12 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#F7F5F2] pb-24">
+      {(pullY > 0 || refreshing) && (
+        <div className="fixed top-0 left-0 right-0 flex justify-center z-50 pointer-events-none"
+          style={{ paddingTop: refreshing ? 12 : Math.max(0, pullY - 20) }}>
+          <span className={`text-2xl ${refreshing ? "animate-spin" : ""}`}>🐾</span>
+        </div>
+      )}
       <header className="bg-white border-b border-stone-100 sticky top-0 z-40">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
           <div>

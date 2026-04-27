@@ -151,7 +151,7 @@ export default function Dashboard() {
           <div className="card p-5">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-2xl overflow-hidden border border-stone-100 flex-shrink-0">
-                <Image src="/icon.png" alt="たび" width={64} height={64} className="w-full h-full object-cover" />
+                <Image src="/tabi-card.png" alt="たび" width={64} height={64} className="w-full h-full object-cover" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">

@@ -77,7 +77,7 @@ export default function MedicationPage() {
           catId: cat.id,
           name,
           dosage: dosage || undefined,
-          givenAt: `${format(new Date(), "yyyy-MM-dd")}T${givenAt}`,
+          givenAt: new Date(`${format(new Date(), "yyyy-MM-dd")}T${givenAt}:00`).toISOString(),
           note: note || undefined,
         }),
       });

@@ -14,11 +14,9 @@ export async function GET(req: NextRequest) {
 
   const where: Record<string, unknown> = { catId: catId ?? undefined };
   if (date) {
-    // datetime-local values are stored as UTC without offset conversion,
-    // so match the date string directly in UTC
     where.loggedAt = {
-      gte: new Date(`${date}T00:00:00.000Z`),
-      lte: new Date(`${date}T23:59:59.999Z`),
+      gte: new Date(`${date}T00:00:00.000+09:00`),
+      lte: new Date(`${date}T23:59:59.999+09:00`),
     };
   }
 

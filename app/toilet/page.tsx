@@ -66,7 +66,7 @@ export default function ToiletPage() {
       const res = await fetch("/api/toilet", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ catId: cat.id, type, count, condition, loggedAt: `${format(new Date(), "yyyy-MM-dd")}T${loggedAt}` }),
+        body: JSON.stringify({ catId: cat.id, type, count, condition, loggedAt: new Date(`${format(new Date(), "yyyy-MM-dd")}T${loggedAt}:00`).toISOString() }),
       });
       if (res.ok) {
         setSuccess(true);

@@ -72,7 +72,7 @@ export default function WeightPage() {
       const res = await fetch("/api/weight", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ catId: cat.id, weight: Number(weight), measuredAt: `${format(new Date(), "yyyy-MM-dd")}T${measuredAt}`, note }),
+        body: JSON.stringify({ catId: cat.id, weight: Number(weight), measuredAt: new Date(`${format(new Date(), "yyyy-MM-dd")}T${measuredAt}:00`).toISOString(), note }),
       });
       if (res.ok) {
         setSuccess(true);

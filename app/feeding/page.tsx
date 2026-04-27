@@ -15,7 +15,7 @@ const FOOD_TYPES = [
   { key: "その他", emoji: "🍽️" },
 ];
 
-const PRESETS = [5, 10, 15, 20, 25, 30, 35, 40];
+const PRESETS = [5, 10, 15, 20];
 
 const MESSAGES = [
   "何を何グラム食べたかな？",
@@ -76,7 +76,7 @@ export default function FeedingPage() {
       const res = await fetch("/api/feeding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ catId: cat.id, foodType, amount: Number(amount), fedAt: `${format(new Date(), "yyyy-MM-dd")}T${fedAt}`, note }),
+        body: JSON.stringify({ catId: cat.id, foodType, amount: Number(amount), fedAt: new Date(`${format(new Date(), "yyyy-MM-dd")}T${fedAt}:00`).toISOString(), note }),
       });
       if (res.ok) {
         setSuccess(true);
@@ -173,7 +173,7 @@ export default function FeedingPage() {
                   onClick={() => setAmount(String(g))}
                   className={`py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-95 border ${
                     amount === String(g)
-                      ? "bg-stone-800 text-white border-stone-800"
+                      ? "bg-[#F69F9A] text-white border-[#F69F9A]"
                       : "bg-white text-stone-600 border-stone-200 hover:border-stone-300"
                   }`}
                 >

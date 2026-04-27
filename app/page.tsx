@@ -2,14 +2,38 @@
 
 import { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
-import { format } from "date-fns";
+import { format, differenceInYears, differenceInMonths } from "date-fns";
 import { ja } from "date-fns/locale";
+import { BottomNav } from "@/components/BottomNav";
 import Link from "next/link";
 
-interface FeedingLog { id: string; amount: number; fedAt: string; user: { name: string } }
+interface FeedingLog { id: string; amount: number; foodType: string | null; fedAt: string; user: { name: string } }
 interface ToiletLog { id: string; type: string; count: number; loggedAt: string; user: { name: string } }
 interface WeightLog { id: string; weight: number; measuredAt: string }
-interface Cat { id: string; name: string; breed: string | null }
+interface Cat { id: string; name: string; breed: string | null; birthday: string | null }
+
+function catAge(birthday: string | null) {
+  if (!birthday) return null;
+  const bd = new Date(birthday);
+  const years = differenceInYears(new Date(), bd);
+  const months = differenceInMonths(new Date(), bd) % 12;
+  return years > 0 ? `${years}歳${months}ヶ月` : `${months}ヶ月`;
+}
+
+function greeting() {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 11) return "おはよう、たび！今日もよろしくね 🌅";
+  if (h >= 11 && h < 17) return "たびは元気かな？";
+  if (h >= 17 && h < 21) return "今日もよく頑張ったね 🌙";
+  return "もうおやすみの時間だよ 😴";
+}
+
+function foodEmoji(foodType: string | null) {
+  if (foodType === "ミルク") return "🥛";
+  if (foodType === "おやつ") return "🍬";
+  if (foodType === "ウェット") return "🍖";
+  return "🥣";
+}
 
 export default function Dashboard() {
   const { data: session } = useSession();
@@ -24,11 +48,10 @@ export default function Dashboard() {
 
   useEffect(() => {
     async function load() {
-      const catRes = await fetch("/api/cat").then((r) => r.json());
-      const c: Cat = catRes[0];
+      const cats = await fetch("/api/cat").then((r) => r.json());
+      const c: Cat = cats[0];
       if (!c) { setLoading(false); return; }
       setCat(c);
-
       const [f, t, w] = await Promise.all([
         fetch(`/api/feeding?catId=${c.id}&date=${today}`).then((r) => r.json()),
         fetch(`/api/toilet?catId=${c.id}&date=${today}`).then((r) => r.json()),
@@ -45,143 +68,172 @@ export default function Dashboard() {
   const totalFed = feedings.reduce((s, f) => s + f.amount, 0);
   const urineCount = toilets.filter((t) => t.type === "URINE").reduce((s, t) => s + t.count, 0);
   const fecesCount = toilets.filter((t) => t.type === "FECES").reduce((s, t) => s + t.count, 0);
+  const fedDone = totalFed > 0;
+  const urineDone = urineCount > 0;
+  const fecesDone = fecesCount > 0;
+  const allDone = fedDone && urineDone && fecesDone;
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-amber-50 flex items-center justify-center">
-        <p className="text-gray-400">読み込み中...</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#F7F5F2]">
+        <div className="text-center space-y-3">
+          <div className="text-5xl animate-bounce">🐱</div>
+          <p className="text-sm text-stone-400">読み込み中...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-amber-50">
-      {/* ヘッダー */}
-      <header className="bg-white border-b border-amber-100 px-4 py-3 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-bold text-gray-800">🐱 たびの健康手帳</h1>
-          <p className="text-xs text-gray-400">{todayLabel}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-gray-500">{session?.user.name}</span>
-          <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
-            className="text-xs text-gray-400 hover:text-gray-600"
-          >
-            ログアウト
-          </button>
+    <div className="min-h-screen bg-[#F7F5F2] pb-24">
+      <header className="bg-white border-b border-stone-100 sticky top-0 z-40">
+        <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
+          <div>
+            <h1 className="text-sm font-bold text-stone-800 leading-tight">たびの健康手帳</h1>
+            <p className="text-[10px] text-stone-400">{todayLabel}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-stone-500">{session?.user.name}</span>
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="text-xs text-stone-300 hover:text-stone-500 transition-colors"
+            >
+              ログアウト
+            </button>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto p-4 space-y-4">
-        {/* 今日のサマリー */}
-        <div className="grid grid-cols-3 gap-3">
-          <SummaryCard
-            label="今日の給餌"
-            value={totalFed > 0 ? `${totalFed}g` : "未記録"}
-            done={totalFed > 0}
-            emoji="🍚"
-          />
-          <SummaryCard
-            label="💧 尿"
-            value={urineCount > 0 ? `${urineCount}回` : "未記録"}
-            done={urineCount > 0}
-            emoji=""
-          />
-          <SummaryCard
-            label="🌼 便"
-            value={fecesCount > 0 ? `${fecesCount}回` : "未記録"}
-            done={fecesCount > 0}
-            emoji=""
-          />
-        </div>
-
-        {/* 最新体重 */}
-        {latestWeight && (
-          <div className="bg-white rounded-xl border border-amber-100 p-4 flex items-center gap-3">
-            <span className="text-2xl">⚖️</span>
-            <div>
-              <p className="text-xs text-gray-400">最新体重</p>
-              <p className="text-xl font-bold text-gray-800">{latestWeight.weight.toFixed(2)} kg</p>
-              <p className="text-xs text-gray-400">
-                {format(new Date(latestWeight.measuredAt), "M/d計測")}
-              </p>
+      <main className="max-w-lg mx-auto px-4 pt-5 space-y-4">
+        {/* 猫プロフィールカード */}
+        {cat && (
+          <div className="card p-5">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-stone-50 rounded-2xl flex items-center justify-center border border-stone-100 flex-shrink-0">
+                <span className="text-3xl">🐱</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <h2 className="text-lg font-bold text-stone-800">{cat.name}</h2>
+                  {catAge(cat.birthday) && (
+                    <span className="text-xs text-stone-400 bg-stone-50 px-2 py-0.5 rounded-full border border-stone-100">
+                      {catAge(cat.birthday)}
+                    </span>
+                  )}
+                </div>
+                {cat.breed && <p className="text-xs text-stone-400">{cat.breed}</p>}
+                <p className="text-xs text-stone-500 mt-1">{greeting()}</p>
+              </div>
+              {latestWeight && (
+                <div className="text-right flex-shrink-0">
+                  <p className="text-xs text-stone-400">体重</p>
+                  <p className="text-base font-bold text-stone-700">{latestWeight.weight.toFixed(2)}<span className="text-xs font-normal text-stone-400 ml-0.5">kg</span></p>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* クイック記録ボタン */}
-        <div className="grid grid-cols-3 gap-3">
-          <Link href="/feeding" className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl p-4 text-center transition-colors">
-            <p className="text-2xl mb-1">🍚</p>
-            <p className="text-sm font-semibold">給餌を記録</p>
-          </Link>
-          <Link href="/toilet" className="bg-sky-500 hover:bg-sky-600 text-white rounded-xl p-4 text-center transition-colors">
-            <p className="text-2xl mb-1">🚿</p>
-            <p className="text-sm font-semibold">トイレを記録</p>
-          </Link>
-          <Link href="/weight" className="bg-violet-500 hover:bg-violet-600 text-white rounded-xl p-4 text-center transition-colors">
-            <p className="text-2xl mb-1">⚖️</p>
-            <p className="text-sm font-semibold">体重を記録</p>
-          </Link>
+        {/* 全完了 */}
+        {allDone && (
+          <div className="card p-4 flex items-center gap-3">
+            <span className="text-2xl">🌟</span>
+            <div>
+              <p className="text-sm font-bold text-stone-700">今日も完璧！</p>
+              <p className="text-xs text-stone-400">たびのケアをありがとう 🐾</p>
+            </div>
+          </div>
+        )}
+
+        {/* 今日のステータス */}
+        <div>
+          <p className="text-xs font-semibold text-stone-400 mb-2 px-1">今日のようす</p>
+          <div className="grid grid-cols-3 gap-2">
+            <StatusCard emoji="🥣" label="ごはん" value={fedDone ? `${totalFed}g` : "まだかな"} done={fedDone} />
+            <StatusCard emoji="💧" label="おしっこ" value={urineDone ? `${urineCount}回` : "まだかな"} done={urineDone} />
+            <StatusCard emoji="🌼" label="うんち" value={fecesDone ? `${fecesCount}回` : "まだかな"} done={fecesDone} />
+          </div>
         </div>
 
-        {/* 今日の記録一覧 */}
-        {feedings.length > 0 && (
-          <Section title="本日の給餌記録">
-            {feedings.map((f) => (
-              <LogRow key={f.id}
-                left={`${f.amount}g`}
-                right={format(new Date(f.fedAt), "HH:mm")}
-                by={f.user.name}
-              />
-            ))}
-          </Section>
+        {/* クイック記録 */}
+        <div>
+          <p className="text-xs font-semibold text-stone-400 mb-2 px-1">記録する</p>
+          <div className="grid grid-cols-3 gap-2">
+            <QuickButton href="/feeding" emoji="🍚" label="ごはん" done={fedDone} />
+            <QuickButton href="/toilet" emoji="🚿" label="トイレ" done={urineDone && fecesDone} />
+            <QuickButton href="/weight" emoji="⚖️" label="体重" done={false} />
+          </div>
+        </div>
+
+        {/* タイムライン */}
+        {(feedings.length > 0 || toilets.length > 0) && (
+          <div>
+            <p className="text-xs font-semibold text-stone-400 mb-2 px-1">たびのきょう</p>
+            <div className="card overflow-hidden divide-y divide-stone-50">
+              {[...feedings.map((f) => ({
+                time: f.fedAt,
+                emoji: foodEmoji(f.foodType),
+                label: `${f.foodType ?? "ごはん"} ${f.amount}g`,
+                by: f.user.name,
+              })), ...toilets.map((t) => ({
+                time: t.loggedAt,
+                emoji: t.type === "URINE" ? "💧" : "🌼",
+                label: `${t.type === "URINE" ? "おしっこ" : "うんち"} ${t.count}回`,
+                by: t.user.name,
+              }))]
+                .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+                .map((item, i) => (
+                  <div key={i} className="px-4 py-3 flex items-center gap-3">
+                    <span className="text-lg w-7 text-center">{item.emoji}</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-stone-700">{item.label}</p>
+                      <p className="text-xs text-stone-400">{item.by}</p>
+                    </div>
+                    <p className="text-xs text-stone-400 tabular-nums">
+                      {format(new Date(item.time), "HH:mm")}
+                    </p>
+                  </div>
+                ))}
+            </div>
+          </div>
         )}
 
-        {toilets.length > 0 && (
-          <Section title="本日のトイレ記録">
-            {toilets.map((t) => (
-              <LogRow key={t.id}
-                left={`${t.type === "URINE" ? "💧 尿" : "🌼 便"} ${t.count}回`}
-                right={format(new Date(t.loggedAt), "HH:mm")}
-                by={t.user.name}
-              />
-            ))}
-          </Section>
+        {feedings.length === 0 && toilets.length === 0 && (
+          <div className="card p-8 text-center">
+            <p className="text-3xl mb-3">🐾</p>
+            <p className="text-sm text-stone-500">今日の記録がまだないよ</p>
+            <p className="text-xs text-stone-300 mt-1">ごはんやトイレを記録してみてね</p>
+          </div>
         )}
       </main>
+
+      <BottomNav />
     </div>
   );
 }
 
-function SummaryCard({ label, value, done, emoji }: { label: string; value: string; done: boolean; emoji: string }) {
+function StatusCard({ emoji, label, value, done }: { emoji: string; label: string; value: string; done: boolean }) {
   return (
-    <div className={`rounded-xl border p-3 text-center ${done ? "bg-green-50 border-green-200" : "bg-white border-gray-100"}`}>
-      {emoji && <p className="text-xl mb-1">{emoji}</p>}
-      <p className="text-xs text-gray-400 mb-1">{label}</p>
-      <p className={`text-sm font-bold ${done ? "text-green-600" : "text-gray-400"}`}>{value}</p>
+    <div className="card p-3.5 text-center">
+      <p className="text-2xl mb-1.5">{emoji}</p>
+      <p className="text-[10px] text-stone-400 mb-1">{label}</p>
+      <p className={`text-xs font-bold ${done ? "text-stone-700" : "text-stone-300"}`}>{value}</p>
+      {done && <div className="w-1.5 h-1.5 bg-[#F69F9A] rounded-full mx-auto mt-1.5" />}
     </div>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function QuickButton({ href, emoji, label, done }: { href: string; emoji: string; label: string; done: boolean }) {
   return (
-    <div className="bg-white rounded-xl border border-amber-100 overflow-hidden">
-      <p className="px-4 py-2 text-xs font-semibold text-gray-500 bg-gray-50 border-b border-gray-100">{title}</p>
-      <div className="divide-y divide-gray-50">{children}</div>
-    </div>
-  );
-}
-
-function LogRow({ left, right, by }: { left: string; right: string; by: string }) {
-  return (
-    <div className="px-4 py-2 flex items-center justify-between">
-      <span className="text-sm font-medium text-gray-700">{left}</span>
-      <div className="text-right">
-        <p className="text-sm text-gray-500">{right}</p>
-        <p className="text-xs text-gray-300">{by}</p>
-      </div>
-    </div>
+    <Link
+      href={href}
+      className="relative card p-4 text-center active:scale-95 transform transition-transform block"
+    >
+      {done && (
+        <span className="absolute top-2 right-2 text-[#F69F9A] text-xs">✓</span>
+      )}
+      <p className="text-2xl mb-1">{emoji}</p>
+      <p className="text-xs font-semibold text-stone-600">{label}</p>
+    </Link>
   );
 }

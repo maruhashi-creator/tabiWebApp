@@ -3,17 +3,29 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import Link from "next/link";
+import { BottomNav } from "@/components/BottomNav";
 
 interface Cat { id: string; name: string }
+
+const FOOD_TYPES = [
+  { key: "カリカリ", emoji: "🥣" },
+  { key: "ウェット", emoji: "🍖" },
+  { key: "ミルク", emoji: "🥛" },
+  { key: "おやつ", emoji: "🍬" },
+  { key: "その他", emoji: "🍽️" },
+];
+
+const PRESETS = [10, 20, 30, 40, 50, 60, 70, 80];
 
 export default function FeedingPage() {
   const router = useRouter();
   const [cat, setCat] = useState<Cat | null>(null);
+  const [foodType, setFoodType] = useState("カリカリ");
   const [amount, setAmount] = useState("");
   const [fedAt, setFedAt] = useState(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -22,17 +34,18 @@ export default function FeedingPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!cat) return;
+    if (!cat || !amount) return;
     setSaving(true);
     setError("");
     try {
       const res = await fetch("/api/feeding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ catId: cat.id, amount: Number(amount), fedAt, note }),
+        body: JSON.stringify({ catId: cat.id, foodType, amount: Number(amount), fedAt, note }),
       });
       if (res.ok) {
-        router.push("/");
+        setSuccess(true);
+        setTimeout(() => router.push("/"), 1800);
       } else {
         const d = await res.json();
         setError(d.error ?? "エラーが発生しました");
@@ -44,18 +57,66 @@ export default function FeedingPage() {
     }
   }
 
+  if (success) {
+    const ft = FOOD_TYPES.find((f) => f.key === foodType);
+    return (
+      <div className="min-h-screen bg-[#F7F5F2] flex items-center justify-center">
+        <div className="text-center space-y-4 px-8">
+          <div className="text-6xl animate-bounce">{ft?.emoji ?? "🥣"}</div>
+          <p className="text-lg font-bold text-stone-700">記録したよ！</p>
+          <p className="text-sm text-stone-400 leading-relaxed">
+            たびの{foodType}、ちゃんと食べてくれたかな？<br />
+            毎日の積み重ねが大切だよ 🐾
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-amber-50">
-      <header className="bg-white border-b border-amber-100 px-4 py-3 flex items-center gap-3">
-        <Link href="/" className="text-gray-400 hover:text-gray-600 text-sm">← 戻る</Link>
-        <h1 className="text-lg font-bold text-gray-800">🍚 給餌を記録</h1>
+    <div className="min-h-screen bg-[#F7F5F2] pb-24">
+      <header className="bg-white border-b border-stone-100 sticky top-0 z-40">
+        <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">
+          <button onClick={() => router.back()} className="text-stone-400 hover:text-stone-600 text-sm transition-colors">
+            ← 戻る
+          </button>
+          <div>
+            <h1 className="text-base font-bold text-stone-800">たびのごはん</h1>
+            <p className="text-[10px] text-stone-400">何を何グラム食べたかな？</p>
+          </div>
+        </div>
       </header>
 
-      <main className="max-w-lg mx-auto p-4">
-        <div className="bg-white rounded-xl border border-amber-100 p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
+      <main className="max-w-lg mx-auto px-4 pt-5 space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* 食べ物の種類 */}
+          <div className="card p-5 space-y-3">
+            <label className="block text-xs font-semibold text-stone-400 text-center">種類</label>
+            <div className="grid grid-cols-5 gap-2">
+              {FOOD_TYPES.map((ft) => (
+                <button
+                  key={ft.key}
+                  type="button"
+                  onClick={() => setFoodType(ft.key)}
+                  className={`py-3 rounded-xl flex flex-col items-center gap-1 transition-all active:scale-95 border-2 ${
+                    foodType === ft.key
+                      ? "border-[#F69F9A] bg-stone-50"
+                      : "border-stone-100 bg-white hover:border-stone-200"
+                  }`}
+                >
+                  <span className="text-2xl">{ft.emoji}</span>
+                  <span className={`text-[10px] font-semibold ${foodType === ft.key ? "text-[#F69F9A]" : "text-stone-400"}`}>
+                    {ft.key}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 給餌量 */}
+          <div className="card p-5 space-y-4">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">給餌量（g）</label>
+              <label className="block text-xs font-semibold text-stone-400 mb-3 text-center">給餌量（g）</label>
               <input
                 type="number"
                 min={1}
@@ -63,64 +124,67 @@ export default function FeedingPage() {
                 step={1}
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                placeholder="例: 60"
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-2xl font-bold text-center focus:outline-none focus:ring-2 focus:ring-orange-400"
+                placeholder="0"
+                className="w-full border-0 bg-stone-50 rounded-2xl px-4 py-4 text-4xl font-bold text-center text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-300 placeholder-stone-200"
                 required
                 autoFocus
               />
             </div>
-
-            <div className="grid grid-cols-3 gap-2">
-              {[30, 40, 50, 60, 70, 80].map((g) => (
+            <div className="grid grid-cols-4 gap-2">
+              {PRESETS.map((g) => (
                 <button
                   key={g}
                   type="button"
                   onClick={() => setAmount(String(g))}
-                  className={`py-2 rounded-lg border text-sm font-medium transition-colors ${
+                  className={`py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-95 border ${
                     amount === String(g)
-                      ? "bg-orange-500 text-white border-orange-500"
-                      : "border-gray-200 text-gray-600 hover:border-orange-300"
+                      ? "bg-stone-800 text-white border-stone-800"
+                      : "bg-white text-stone-600 border-stone-200 hover:border-stone-300"
                   }`}
                 >
                   {g}g
                 </button>
               ))}
             </div>
+          </div>
 
+          {/* 時刻・メモ */}
+          <div className="card p-5 space-y-4">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">時刻</label>
+              <label className="block text-xs font-semibold text-stone-400 mb-1.5">時刻</label>
               <input
                 type="datetime-local"
                 value={fedAt}
                 onChange={(e) => setFedAt(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                className="input"
                 required
               />
             </div>
-
             <div>
-              <label className="block text-xs text-gray-500 mb-1">メモ（任意）</label>
+              <label className="block text-xs font-semibold text-stone-400 mb-1.5">メモ（任意）</label>
               <input
                 type="text"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="完食、残しあり など"
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                placeholder="完食、残しあり、嬉しそうだった など"
+                className="input"
               />
             </div>
+          </div>
 
-            {error && <p className="text-xs text-red-500">{error}</p>}
+          {error && (
+            <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">
+              <p className="text-xs text-red-400">{error}</p>
+            </div>
+          )}
 
-            <button
-              type="submit"
-              disabled={saving || !amount}
-              className="w-full py-3 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-semibold disabled:opacity-50 transition-colors"
-            >
-              {saving ? "記録中..." : "記録する"}
-            </button>
-          </form>
-        </div>
+          <button type="submit" disabled={saving || !amount} className="btn-primary w-full py-4 text-base">
+            {saving ? "記録中..." : "記録する"}
+          </button>
+        </form>
       </main>
+
+      <BottomNav />
     </div>
   );
 }

@@ -16,11 +16,7 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
+      const res = await signIn("credentials", { email, password, redirect: false });
       if (res?.ok) {
         router.push("/");
       } else {
@@ -34,45 +30,58 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-amber-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-sm border border-amber-100 p-8 w-full max-w-sm">
-        <div className="text-center mb-8">
-          <p className="text-4xl mb-2">🐱</p>
-          <h1 className="text-xl font-bold text-gray-800">たびの健康手帳</h1>
-          <p className="text-sm text-gray-400 mt-1">ログイン</p>
+    <div className="min-h-screen bg-[#F7F5F2] flex flex-col items-center justify-center p-6">
+      <div className="text-center mb-10">
+        <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center shadow-sm border border-stone-100 mb-5 mx-auto">
+          <span className="text-5xl">🐱</span>
         </div>
+        <h1 className="text-xl font-bold text-stone-800">たびの健康手帳</h1>
+        <p className="text-sm text-stone-400 mt-1">毎日の小さな変化を、ふたりで記録</p>
+      </div>
+
+      <div className="w-full max-w-sm bg-white rounded-3xl shadow-sm border border-stone-100 p-6 space-y-4">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">メールアドレス</label>
+            <label className="block text-xs font-medium text-stone-500 mb-1.5">メールアドレス</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+              className="input"
+              placeholder="example@mail.com"
               required
               autoFocus
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">パスワード</label>
+            <label className="block text-xs font-medium text-stone-500 mb-1.5">パスワード</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+              className="input"
+              placeholder="••••••••"
               required
             />
           </div>
-          {error && <p className="text-xs text-red-500">{error}</p>}
+
+          {error && (
+            <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">
+              <p className="text-xs text-red-400">{error}</p>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm disabled:opacity-50 transition-colors"
+            className="btn-primary w-full py-3.5 text-sm mt-2"
           >
             {loading ? "ログイン中..." : "ログイン"}
           </button>
         </form>
       </div>
+
+      <p className="text-xs text-stone-300 mt-8">たびと一緒に、毎日を大切に 🐾</p>
     </div>
   );
 }

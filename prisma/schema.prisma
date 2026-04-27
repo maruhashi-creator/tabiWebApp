@@ -35,6 +35,7 @@ model FeedingLog {
   id        String   @id @default(cuid())
   catId     String
   userId    String
+  foodType  String?
   amount    Float
   fedAt     DateTime
   note      String?

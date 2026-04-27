@@ -4,11 +4,6 @@ import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { startOfDay, endOfDay } from "date-fns";
-import { fromZonedTime } from "date-fns-tz";
-
-const TZ = "Asia/Tokyo";
-
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -19,8 +14,12 @@ export async function GET(req: NextRequest) {
 
   const where: Record<string, unknown> = { catId: catId ?? undefined };
   if (date) {
-    const d = fromZonedTime(new Date(date), TZ);
-    where.loggedAt = { gte: startOfDay(d), lte: endOfDay(d) };
+    // datetime-local values are stored as UTC without offset conversion,
+    // so match the date string directly in UTC
+    where.loggedAt = {
+      gte: new Date(`${date}T00:00:00.000Z`),
+      lte: new Date(`${date}T23:59:59.999Z`),
+    };
   }
 
   const logs = await prisma.toiletLog.findMany({

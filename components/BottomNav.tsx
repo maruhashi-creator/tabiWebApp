@@ -8,6 +8,7 @@ const items = [
   { href: "/feeding", label: "ごはん", emoji: "🍚" },
   { href: "/toilet", label: "トイレ", emoji: "🚿" },
   { href: "/weight", label: "体重", emoji: "⚖️" },
+  { href: "/medication", label: "お薬", emoji: "💊" },
 ];
 
 export function BottomNav() {

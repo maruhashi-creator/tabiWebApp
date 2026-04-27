@@ -176,7 +176,7 @@ export default function ToiletPage() {
                 type="text"
                 value={condition}
                 onChange={(e) => setCondition(e.target.value)}
-                placeholder="色、量、軟便、いつもより多かった など"
+                placeholder="いつもより多い、少ない、色が違う など"
                 className="input"
               />
             </div>

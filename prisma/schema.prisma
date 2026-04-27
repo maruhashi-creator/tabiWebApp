@@ -8,27 +8,29 @@ datasource db {
 }
 
 model User {
-  id          String       @id @default(cuid())
-  email       String       @unique
-  password    String
-  name        String
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  feedingLogs FeedingLog[]
-  toiletLogs  ToiletLog[]
-  weightLogs  WeightLog[]
+  id              String          @id @default(cuid())
+  email           String          @unique
+  password        String
+  name            String
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  feedingLogs     FeedingLog[]
+  toiletLogs      ToiletLog[]
+  weightLogs      WeightLog[]
+  medicationLogs  MedicationLog[]
 }
 
 model Cat {
-  id          String       @id @default(cuid())
-  name        String
-  birthday    DateTime?
-  breed       String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  feedingLogs FeedingLog[]
-  toiletLogs  ToiletLog[]
-  weightLogs  WeightLog[]
+  id              String          @id @default(cuid())
+  name            String
+  birthday        DateTime?
+  breed           String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  feedingLogs     FeedingLog[]
+  toiletLogs      ToiletLog[]
+  weightLogs      WeightLog[]
+  medicationLogs  MedicationLog[]
 }
 
 model FeedingLog {
@@ -67,4 +69,17 @@ model WeightLog {
   cat        Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
   user       User     @relation(fields: [userId], references: [id])
   createdAt  DateTime @default(now())
+}
+
+model MedicationLog {
+  id        String   @id @default(cuid())
+  catId     String
+  userId    String
+  name      String
+  dosage    String?
+  givenAt   DateTime
+  note      String?
+  cat       Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
 }

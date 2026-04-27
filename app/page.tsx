@@ -11,6 +11,7 @@ interface FeedingLog { id: string; amount: number; foodType: string | null; fedA
 interface ToiletLog { id: string; type: string; count: number; loggedAt: string; user: { name: string } }
 interface WeightLog { id: string; weight: number; measuredAt: string }
 interface Cat { id: string; name: string; breed: string | null; birthday: string | null }
+interface Anomaly { type: string; level: "warn" | "alert"; message: string }
 
 function catAge(birthday: string | null) {
   if (!birthday) return null;
@@ -44,6 +45,7 @@ export default function Dashboard() {
   const [feedings, setFeedings] = useState<FeedingLog[]>([]);
   const [toilets, setToilets] = useState<ToiletLog[]>([]);
   const [latestWeight, setLatestWeight] = useState<WeightLog | null>(null);
+  const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -52,14 +54,16 @@ export default function Dashboard() {
       const c: Cat = cats[0];
       if (!c) { setLoading(false); return; }
       setCat(c);
-      const [f, t, w] = await Promise.all([
+      const [f, t, w, a] = await Promise.all([
         fetch(`/api/feeding?catId=${c.id}&date=${today}`).then((r) => r.json()),
         fetch(`/api/toilet?catId=${c.id}&date=${today}`).then((r) => r.json()),
         fetch(`/api/weight?catId=${c.id}&limit=1`).then((r) => r.json()),
+        fetch(`/api/anomaly?catId=${c.id}`).then((r) => r.json()),
       ]);
       setFeedings(f);
       setToilets(t);
       setLatestWeight(w[0] ?? null);
+      setAnomalies(Array.isArray(a) ? a : []);
       setLoading(false);
     }
     load();
@@ -134,8 +138,23 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* 異常検知アラート */}
+        {anomalies.map((a, i) => (
+          <div
+            key={i}
+            className={`card p-4 flex items-center gap-3 border ${
+              a.level === "alert" ? "border-red-200 bg-red-50" : "border-amber-100 bg-amber-50"
+            }`}
+          >
+            <span className="text-2xl">{a.level === "alert" ? "⚠️" : "🔔"}</span>
+            <p className={`text-sm font-medium ${a.level === "alert" ? "text-red-600" : "text-amber-700"}`}>
+              {a.message}
+            </p>
+          </div>
+        ))}
+
         {/* 全完了 */}
-        {allDone && (
+        {allDone && anomalies.length === 0 && (
           <div className="card p-4 flex items-center gap-3">
             <span className="text-2xl">🌟</span>
             <div>
@@ -158,10 +177,11 @@ export default function Dashboard() {
         {/* クイック記録 */}
         <div>
           <p className="text-xs font-semibold text-stone-400 mb-2 px-1">記録する</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             <QuickButton href="/feeding" emoji="🍚" label="ごはん" done={fedDone} />
             <QuickButton href="/toilet" emoji="🚿" label="トイレ" done={urineDone && fecesDone} />
             <QuickButton href="/weight" emoji="⚖️" label="体重" done={false} />
+            <QuickButton href="/medication" emoji="💊" label="お薬" done={false} />
           </div>
         </div>
 

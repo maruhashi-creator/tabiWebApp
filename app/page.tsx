@@ -188,7 +188,7 @@ export default function Dashboard() {
         {/* タイムライン */}
         {(feedings.length > 0 || toilets.length > 0) && (
           <div>
-            <p className="text-xs font-semibold text-stone-400 mb-2 px-1">きょうのたび</p>
+            <p className="text-xs font-semibold text-stone-400 mb-2 px-1">今日のたび</p>
             <div className="card overflow-hidden divide-y divide-stone-50">
               {[...feedings.map((f) => ({
                 time: f.fedAt,

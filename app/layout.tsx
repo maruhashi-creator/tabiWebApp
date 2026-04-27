@@ -15,6 +15,15 @@ export const metadata: Metadata = {
     maximumScale: 1,
     userScalable: false,
   },
+  icons: {
+    apple: "/icon.png",
+    icon: "/icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "たびの健康手帳",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

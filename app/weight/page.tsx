@@ -43,7 +43,8 @@ interface WeightLog { id: string; weight: number; measuredAt: string; user: { na
 
 export default function WeightPage() {
   const router = useRouter();
-  const [message] = useState(() => MESSAGES[Math.floor(Math.random() * MESSAGES.length)]);
+  const [message, setMessage] = useState("");
+  useEffect(() => { setMessage(MESSAGES[Math.floor(Math.random() * MESSAGES.length)]); }, []);
   const [cat, setCat] = useState<Cat | null>(null);
   const [weight, setWeight] = useState("");
   const [measuredAt, setMeasuredAt] = useState(format(new Date(), "HH:mm"));

@@ -42,7 +42,8 @@ const MESSAGES = [
 
 export default function ToiletPage() {
   const router = useRouter();
-  const [message] = useState(() => MESSAGES[Math.floor(Math.random() * MESSAGES.length)]);
+  const [message, setMessage] = useState("");
+  useEffect(() => { setMessage(MESSAGES[Math.floor(Math.random() * MESSAGES.length)]); }, []);
   const [cat, setCat] = useState<Cat | null>(null);
   const [type, setType] = useState<"URINE" | "FECES">("URINE");
   const [count, setCount] = useState(1);

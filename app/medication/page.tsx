@@ -43,7 +43,8 @@ const MESSAGES = [
 
 export default function MedicationPage() {
   const router = useRouter();
-  const [message] = useState(() => MESSAGES[Math.floor(Math.random() * MESSAGES.length)]);
+  const [message, setMessage] = useState("");
+  useEffect(() => { setMessage(MESSAGES[Math.floor(Math.random() * MESSAGES.length)]); }, []);
   const [cat, setCat] = useState<Cat | null>(null);
   const [name, setName] = useState("");
   const [dosage, setDosage] = useState("");

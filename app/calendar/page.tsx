@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths, isToday } from "date-fns";
 import { ja } from "date-fns/locale";
 import { BottomNav } from "@/components/BottomNav";
 
 interface Cat { id: string; name: string }
+interface FeedingLog { id: string; amount: number; foodType: string | null; fedAt: string; user: { name: string } }
+interface ToiletLog { id: string; type: string; count: number; loggedAt: string; user: { name: string } }
+interface WeightLog { id: string; weight: number; measuredAt: string; user: { name: string } }
+interface MedicationLog { id: string; name: string; dosage: string | null; givenAt: string; user: { name: string } }
 
 interface DayRecord {
   feeding: boolean;
@@ -20,7 +24,12 @@ export default function CalendarPage() {
   const [cat, setCat] = useState<Cat | null>(null);
   const [month, setMonth] = useState(new Date());
   const [records, setRecords] = useState<Record<string, DayRecord>>({});
+  const [feedings, setFeedings] = useState<FeedingLog[]>([]);
+  const [toilets, setToilets] = useState<ToiletLog[]>([]);
+  const [weights, setWeights] = useState<WeightLog[]>([]);
+  const [medications, setMedications] = useState<MedicationLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/cat").then((r) => r.json()).then((cats) => setCat(cats[0] ?? null));
@@ -38,8 +47,17 @@ export default function CalendarPage() {
       fetch(`/api/weight?catId=${cat.id}&limit=200`).then((r) => r.json()).catch(() => []),
       fetch(`/api/medication?catId=${cat.id}&limit=200`).then((r) => r.json()).catch(() => []),
     ]).then(([f, t, w, m]) => {
-      const map: Record<string, DayRecord> = {};
+      const safeF: FeedingLog[] = Array.isArray(f) ? f : [];
+      const safeT: ToiletLog[] = Array.isArray(t) ? t : [];
+      const safeW: WeightLog[] = Array.isArray(w) ? w : [];
+      const safeM: MedicationLog[] = Array.isArray(m) ? m : [];
 
+      setFeedings(safeF);
+      setToilets(safeT);
+      setWeights(safeW);
+      setMedications(safeM);
+
+      const map: Record<string, DayRecord> = {};
       const days = eachDayOfInterval({ start: startOfMonth(month), end: endOfMonth(month) });
       for (const d of days) {
         const key = format(d, "yyyy-MM-dd");
@@ -47,11 +65,10 @@ export default function CalendarPage() {
       }
 
       const dateOf = (iso: string) => format(new Date(iso), "yyyy-MM-dd");
-
-      if (Array.isArray(f)) f.forEach((x: { fedAt: string }) => { const k = dateOf(x.fedAt); if (map[k]) map[k].feeding = true; });
-      if (Array.isArray(t)) t.forEach((x: { loggedAt: string }) => { const k = dateOf(x.loggedAt); if (map[k]) map[k].toilet = true; });
-      if (Array.isArray(w)) w.forEach((x: { measuredAt: string }) => { const k = dateOf(x.measuredAt); if (map[k]) map[k].weight = true; });
-      if (Array.isArray(m)) m.forEach((x: { givenAt: string }) => { const k = dateOf(x.givenAt); if (map[k]) map[k].medication = true; });
+      safeF.forEach((x) => { const k = dateOf(x.fedAt); if (map[k]) map[k].feeding = true; });
+      safeT.forEach((x) => { const k = dateOf(x.loggedAt); if (map[k]) map[k].toilet = true; });
+      safeW.forEach((x) => { const k = dateOf(x.measuredAt); if (map[k]) map[k].weight = true; });
+      safeM.forEach((x) => { const k = dateOf(x.givenAt); if (map[k]) map[k].medication = true; });
 
       setRecords(map);
       setLoading(false);
@@ -124,8 +141,15 @@ export default function CalendarPage() {
                 const rec = records[key];
                 const dow = getDay(day);
                 const today = isToday(day);
+                const hasAny = rec && (rec.feeding || rec.toilet || rec.weight || rec.medication);
                 return (
-                  <div key={key} className={`min-h-[52px] p-1.5 flex flex-col ${today ? "bg-[#FFF5F4]" : ""}`}>
+                  <button
+                    key={key}
+                    onClick={() => hasAny ? setSelectedDay(key) : undefined}
+                    className={`min-h-[52px] p-1.5 flex flex-col text-left w-full transition-colors ${
+                      today ? "bg-[#FFF5F4]" : ""
+                    } ${hasAny ? "active:bg-stone-50" : ""}`}
+                  >
                     <span className={`text-[11px] font-medium leading-none mb-1.5 ${
                       today ? "text-[#F69F9A] font-bold" :
                       dow === 0 ? "text-red-400" :
@@ -140,7 +164,7 @@ export default function CalendarPage() {
                       {rec?.weight && <span className="w-1.5 h-1.5 rounded-full bg-emerald-300" />}
                       {rec?.medication && <span className="w-1.5 h-1.5 rounded-full bg-violet-300" />}
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -148,7 +172,152 @@ export default function CalendarPage() {
         </div>
       </main>
 
+      <DaySheet
+        day={selectedDay}
+        feedings={feedings}
+        toilets={toilets}
+        weights={weights}
+        medications={medications}
+        onClose={() => setSelectedDay(null)}
+      />
+
       <BottomNav />
     </div>
+  );
+}
+
+function DaySheet({
+  day, feedings, toilets, weights, medications, onClose,
+}: {
+  day: string | null;
+  feedings: FeedingLog[];
+  toilets: ToiletLog[];
+  weights: WeightLog[];
+  medications: MedicationLog[];
+  onClose: () => void;
+}) {
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const open = day !== null;
+
+  // キーボードESCで閉じる
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  if (!day) return null;
+
+  const dateOf = (iso: string) => format(new Date(iso), "yyyy-MM-dd");
+  const dayFeedings = feedings.filter((x) => dateOf(x.fedAt) === day)
+    .sort((a, b) => new Date(a.fedAt).getTime() - new Date(b.fedAt).getTime());
+  const dayToilets = toilets.filter((x) => dateOf(x.loggedAt) === day)
+    .sort((a, b) => new Date(a.loggedAt).getTime() - new Date(b.loggedAt).getTime());
+  const dayWeights = weights.filter((x) => dateOf(x.measuredAt) === day)
+    .sort((a, b) => new Date(a.measuredAt).getTime() - new Date(b.measuredAt).getTime());
+  const dayMeds = medications.filter((x) => dateOf(x.givenAt) === day)
+    .sort((a, b) => new Date(a.givenAt).getTime() - new Date(b.givenAt).getTime());
+
+  const dateLabel = format(new Date(day), "M月d日(E)", { locale: ja });
+
+  function foodEmoji(foodType: string | null) {
+    if (foodType === "ミルク") return "🥛";
+    if (foodType === "おやつ") return "🍬";
+    if (foodType === "ウェット") return "🍖";
+    return "🥣";
+  }
+
+  return (
+    <>
+      {/* オーバーレイ */}
+      <div
+        className={`fixed inset-0 bg-black/20 z-40 transition-opacity ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        onClick={onClose}
+      />
+
+      {/* ボトムシート */}
+      <div
+        ref={sheetRef}
+        className={`fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-xl transition-transform duration-300 ${
+          open ? "translate-y-0" : "translate-y-full"
+        }`}
+        style={{ maxHeight: "70vh" }}
+      >
+        {/* ハンドル */}
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 rounded-full bg-stone-200" />
+        </div>
+
+        {/* ヘッダー */}
+        <div className="px-5 py-3 flex items-center justify-between border-b border-stone-100">
+          <p className="text-sm font-bold text-stone-800">{dateLabel}</p>
+          <button onClick={onClose} className="text-stone-300 hover:text-stone-500 transition-colors text-xl leading-none">×</button>
+        </div>
+
+        {/* コンテンツ */}
+        <div className="overflow-y-auto" style={{ maxHeight: "calc(70vh - 80px)" }}>
+          {dayFeedings.length === 0 && dayToilets.length === 0 && dayWeights.length === 0 && dayMeds.length === 0 ? (
+            <p className="text-center text-sm text-stone-300 py-10">この日の記録はありません</p>
+          ) : (
+            <div className="divide-y divide-stone-50">
+              {dayFeedings.map((f) => (
+                <div key={f.id} className="px-5 py-3 flex items-center gap-3">
+                  <span className="text-xl w-7 text-center">{foodEmoji(f.foodType)}</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-stone-700">
+                      {f.foodType ?? "ごはん"}
+                      <span className="text-xs font-normal text-stone-400 ml-1">
+                        {f.amount}{f.foodType === "ミルク" ? "ml" : "g"}
+                      </span>
+                    </p>
+                    <p className="text-xs text-stone-400">{f.user.name}</p>
+                  </div>
+                  <p className="text-xs text-stone-400 tabular-nums">{format(new Date(f.fedAt), "HH:mm")}</p>
+                </div>
+              ))}
+              {dayToilets.map((t) => (
+                <div key={t.id} className="px-5 py-3 flex items-center gap-3">
+                  <span className="text-xl w-7 text-center">{t.type === "URINE" ? "💧" : "🌼"}</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-stone-700">
+                      {t.type === "URINE" ? "おしっこ" : "うんち"}
+                      <span className="text-xs font-normal text-stone-400 ml-1">{t.count}回</span>
+                    </p>
+                    <p className="text-xs text-stone-400">{t.user.name}</p>
+                  </div>
+                  <p className="text-xs text-stone-400 tabular-nums">{format(new Date(t.loggedAt), "HH:mm")}</p>
+                </div>
+              ))}
+              {dayWeights.map((w) => (
+                <div key={w.id} className="px-5 py-3 flex items-center gap-3">
+                  <span className="text-xl w-7 text-center">⚖️</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-stone-700">
+                      {w.weight.toFixed(2)}
+                      <span className="text-xs font-normal text-stone-400 ml-0.5">kg</span>
+                    </p>
+                    <p className="text-xs text-stone-400">{w.user.name}</p>
+                  </div>
+                  <p className="text-xs text-stone-400 tabular-nums">{format(new Date(w.measuredAt), "HH:mm")}</p>
+                </div>
+              ))}
+              {dayMeds.map((m) => (
+                <div key={m.id} className="px-5 py-3 flex items-center gap-3">
+                  <span className="text-xl w-7 text-center">💊</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-stone-700">
+                      {m.name}
+                      {m.dosage && <span className="text-xs font-normal text-stone-400 ml-1">{m.dosage}</span>}
+                    </p>
+                    <p className="text-xs text-stone-400">{m.user.name}</p>
+                  </div>
+                  <p className="text-xs text-stone-400 tabular-nums">{format(new Date(m.givenAt), "HH:mm")}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </>
   );
 }

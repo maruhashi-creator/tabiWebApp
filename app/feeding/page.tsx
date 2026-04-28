@@ -15,7 +15,14 @@ const FOOD_TYPES = [
   { key: "その他", emoji: "🍽️" },
 ];
 
-const PRESETS = [5, 10, 15, 20];
+const PRESETS: Record<string, number[]> = {
+  ミルク: [5, 10, 15],
+  おやつ: [2, 5, 10],
+  default: [5, 10, 15, 20],
+};
+function getPresets(foodType: string) {
+  return PRESETS[foodType] ?? PRESETS.default;
+}
 
 const MESSAGES = [
   "何を何グラム食べたかな？",
@@ -174,7 +181,7 @@ export default function FeedingPage() {
               />
             </div>
             <div className="grid grid-cols-4 gap-2">
-              {PRESETS.map((g) => (
+              {getPresets(foodType).map((g) => (
                 <button
                   key={g}
                   type="button"

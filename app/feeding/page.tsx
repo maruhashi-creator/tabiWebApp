@@ -76,7 +76,13 @@ export default function FeedingPage() {
       const res = await fetch("/api/feeding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ catId: cat.id, foodType, amount: Number(amount), fedAt: new Date(`${format(new Date(), "yyyy-MM-dd")}T${fedAt}:00`).toISOString(), note }),
+        body: JSON.stringify({
+          catId: cat.id,
+          foodType,
+          amount: Number(amount),
+          fedAt: new Date(`${format(new Date(), "yyyy-MM-dd")}T${fedAt}:00+09:00`).toISOString(),
+          note,
+        }),
       });
       if (res.ok) {
         setSuccess(true);
@@ -151,7 +157,9 @@ export default function FeedingPage() {
           {/* 給餌量 */}
           <div className="card p-5 space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-stone-400 mb-3 text-center">給餌量（g）</label>
+              <label className="block text-xs font-semibold text-stone-400 mb-3 text-center">
+                給餌量（{foodType === "ミルク" ? "ml" : "g"}）
+              </label>
               <input
                 type="number"
                 min={1}
@@ -177,7 +185,7 @@ export default function FeedingPage() {
                       : "bg-white text-stone-600 border-stone-200 hover:border-stone-300"
                   }`}
                 >
-                  {g}g
+                  {g}{foodType === "ミルク" ? "ml" : "g"}
                 </button>
               ))}
             </div>

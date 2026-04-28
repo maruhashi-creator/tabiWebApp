@@ -138,7 +138,9 @@ function FeedingForm({ cat }: { cat: Cat }) {
       </div>
 
       <div className="card p-5 space-y-4">
-        <label className="block text-xs font-semibold text-stone-400 mb-1 text-center">給餌量（g）</label>
+        <label className="block text-xs font-semibold text-stone-400 mb-1 text-center">
+          給餌量（{foodType === "ミルク" ? "ml" : "g"}）
+        </label>
         <input
           type="number" min={1} max={500} step={1} value={amount}
           onChange={(e) => setAmount(e.target.value)}
@@ -152,7 +154,7 @@ function FeedingForm({ cat }: { cat: Cat }) {
               className={`py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-95 border ${
                 amount === String(g) ? "bg-[#F69F9A] text-white border-[#F69F9A]" : "bg-white text-stone-600 border-stone-200"
               }`}
-            >{g}g</button>
+            >{g}{foodType === "ミルク" ? "ml" : "g"}</button>
           ))}
         </div>
       </div>

@@ -155,7 +155,7 @@ function FeedingForm({ cat }: { cat: Cat }) {
           className="w-full border-0 bg-stone-50 rounded-2xl px-4 py-4 text-4xl font-bold text-center text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-300 placeholder-stone-200"
           required autoFocus
         />
-        <div className="grid grid-cols-4 gap-2">
+        <div className={`grid gap-2 ${getPresets(foodType).length === 3 ? "grid-cols-3" : "grid-cols-4"}`}>
           {getPresets(foodType).map((g) => (
             <button key={g} type="button" onClick={() => setAmount(String(g))}
               className={`py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-95 border ${

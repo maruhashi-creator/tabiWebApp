@@ -180,7 +180,7 @@ export default function FeedingPage() {
                 autoFocus
               />
             </div>
-            <div className="grid grid-cols-4 gap-2">
+            <div className={`grid gap-2 ${getPresets(foodType).length === 3 ? "grid-cols-3" : "grid-cols-4"}`}>
               {getPresets(foodType).map((g) => (
                 <button
                   key={g}

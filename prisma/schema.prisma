@@ -18,6 +18,7 @@ model User {
   toiletLogs      ToiletLog[]
   weightLogs      WeightLog[]
   medicationLogs  MedicationLog[]
+  careLogs        CareLog[]
 }
 
 model Cat {
@@ -31,6 +32,7 @@ model Cat {
   toiletLogs      ToiletLog[]
   weightLogs      WeightLog[]
   medicationLogs  MedicationLog[]
+  careLogs        CareLog[]
 }
 
 model FeedingLog {
@@ -78,6 +80,18 @@ model MedicationLog {
   name      String
   dosage    String?
   givenAt   DateTime
+  note      String?
+  cat       Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model CareLog {
+  id        String   @id @default(cuid())
+  catId     String
+  userId    String
+  type      String
+  doneAt    DateTime
   note      String?
   cat       Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id])

@@ -5,13 +5,14 @@ import { format } from "date-fns";
 import { BottomNav } from "@/components/BottomNav";
 
 interface Cat { id: string; name: string }
-type Tab = "feeding" | "toilet" | "weight" | "medication";
+type Tab = "feeding" | "toilet" | "weight" | "medication" | "care";
 
 const TABS: { key: Tab; emoji: string; label: string }[] = [
   { key: "feeding", emoji: "🍚", label: "ごはん" },
   { key: "toilet", emoji: "🚿", label: "トイレ" },
   { key: "weight", emoji: "⚖️", label: "体重" },
   { key: "medication", emoji: "💊", label: "お薬" },
+  { key: "care", emoji: "🐾", label: "ケア" },
 ];
 
 export default function RecordPage() {
@@ -58,6 +59,7 @@ export default function RecordPage() {
         {cat && tab === "toilet" && <ToiletForm cat={cat} />}
         {cat && tab === "weight" && <WeightForm cat={cat} />}
         {cat && tab === "medication" && <MedicationForm cat={cat} />}
+        {cat && tab === "care" && <CareForm cat={cat} />}
       </main>
 
       <BottomNav />
@@ -421,6 +423,127 @@ function SuccessBanner({ emoji, message }: { emoji: string; message: string }) {
     <div className="flex flex-col items-center justify-center py-16 gap-4">
       <span className="text-6xl animate-bounce">{emoji}</span>
       <p className="text-base font-bold text-stone-700">{message}</p>
+    </div>
+  );
+}
+
+// ── ケア ──────────────────────────────────────────
+
+interface CareLog { id: string; type: string; doneAt: string; user: { name: string } }
+
+const CARE_GROUPS: { label: string; items: { key: string; emoji: string; cycle?: number }[] }[] = [
+  {
+    label: "日々のケア",
+    items: [
+      { key: "おもちゃ遊び", emoji: "🪀" },
+      { key: "爪切り", emoji: "✂️" },
+      { key: "歯磨き", emoji: "🦷" },
+    ],
+  },
+  {
+    label: "定期ケア",
+    items: [
+      { key: "ブラッシング", emoji: "🪮" },
+      { key: "シャンプー", emoji: "🛁" },
+      { key: "ノミ・ダニ予防", emoji: "🛡️" },
+      { key: "爪バリバリ交換", emoji: "📦" },
+    ],
+  },
+  {
+    label: "環境メンテ",
+    items: [
+      { key: "猫砂掃除", emoji: "🧹", cycle: 25 },
+      { key: "水交換", emoji: "💧", cycle: 7 },
+      { key: "トイレシート交換", emoji: "📋", cycle: 4 },
+    ],
+  },
+];
+
+function daysSince(iso: string) {
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+}
+
+function CareForm({ cat }: { cat: Cat }) {
+  const [lastRecords, setLastRecords] = useState<Record<string, CareLog>>({});
+  const [recording, setRecording] = useState<Record<string, boolean>>({});
+  const [justDone, setJustDone] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    fetch(`/api/care?catId=${cat.id}&limit=100`)
+      .then((r) => r.json())
+      .then((logs: CareLog[]) => {
+        const map: Record<string, CareLog> = {};
+        for (const log of logs) {
+          if (!map[log.type]) map[log.type] = log;
+        }
+        setLastRecords(map);
+      });
+  }, [cat.id]);
+
+  async function record(type: string) {
+    if (recording[type]) return;
+    setRecording((prev) => ({ ...prev, [type]: true }));
+    try {
+      const res = await fetch("/api/care", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ catId: cat.id, type, doneAt: new Date().toISOString() }),
+      });
+      if (res.ok) {
+        const newLog: CareLog = await res.json();
+        setLastRecords((prev) => ({ ...prev, [type]: newLog }));
+        setJustDone((prev) => ({ ...prev, [type]: true }));
+        setTimeout(() => setJustDone((prev) => ({ ...prev, [type]: false })), 1500);
+      }
+    } finally {
+      setRecording((prev) => ({ ...prev, [type]: false }));
+    }
+  }
+
+  function lastLabel(type: string, cycle?: number): { text: string; overdue: boolean } {
+    const log = lastRecords[type];
+    if (!log) return { text: "未記録", overdue: !!cycle };
+    const days = daysSince(log.doneAt);
+    const overdue = !!cycle && days > cycle;
+    if (days === 0) return { text: "今日", overdue: false };
+    return { text: `${days}日前`, overdue };
+  }
+
+  return (
+    <div className="space-y-4 pb-4">
+      {CARE_GROUPS.map((group) => (
+        <div key={group.label}>
+          <p className="text-xs font-semibold text-stone-400 mb-2 px-1">{group.label}</p>
+          <div className="card overflow-hidden divide-y divide-stone-50">
+            {group.items.map((item) => {
+              const done = justDone[item.key];
+              const { text, overdue } = lastLabel(item.key, item.cycle);
+              return (
+                <div key={item.key} className="px-4 py-3 flex items-center gap-3">
+                  <span className="text-xl w-7 text-center">{item.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-stone-700">{item.key}</p>
+                    <p className={`text-xs ${overdue ? "text-amber-400 font-medium" : "text-stone-400"}`}>
+                      {text}{overdue ? "（期限超過）" : item.cycle ? `（${item.cycle}日ごと）` : ""}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => record(item.key)}
+                    disabled={recording[item.key]}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all active:scale-95 flex-shrink-0 ${
+                      done
+                        ? "bg-emerald-100 text-emerald-500"
+                        : "bg-stone-100 text-stone-500 hover:bg-stone-200"
+                    }`}
+                  >
+                    {done ? "✓" : "+"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

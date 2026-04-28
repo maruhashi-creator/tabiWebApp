@@ -10,12 +10,14 @@ interface FeedingLog { id: string; amount: number; foodType: string | null; fedA
 interface ToiletLog { id: string; type: string; count: number; loggedAt: string; user: { name: string } }
 interface WeightLog { id: string; weight: number; measuredAt: string; user: { name: string } }
 interface MedicationLog { id: string; name: string; dosage: string | null; givenAt: string; user: { name: string } }
+interface CareLog { id: string; type: string; doneAt: string; user: { name: string } }
 
 interface DayRecord {
   feeding: boolean;
   toilet: boolean;
   weight: boolean;
   medication: boolean;
+  care: boolean;
 }
 
 const DOW = ["日", "月", "火", "水", "木", "金", "土"];
@@ -28,6 +30,7 @@ export default function CalendarPage() {
   const [toilets, setToilets] = useState<ToiletLog[]>([]);
   const [weights, setWeights] = useState<WeightLog[]>([]);
   const [medications, setMedications] = useState<MedicationLog[]>([]);
+  const [cares, setCares] = useState<CareLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
@@ -46,22 +49,25 @@ export default function CalendarPage() {
       fetch(`/api/toilet?catId=${cat.id}&from=${from}&to=${to}`).then((r) => r.json()).catch(() => []),
       fetch(`/api/weight?catId=${cat.id}&limit=200`).then((r) => r.json()).catch(() => []),
       fetch(`/api/medication?catId=${cat.id}&limit=200`).then((r) => r.json()).catch(() => []),
-    ]).then(([f, t, w, m]) => {
+      fetch(`/api/care?catId=${cat.id}&from=${from}&to=${to}`).then((r) => r.json()).catch(() => []),
+    ]).then(([f, t, w, m, c]) => {
       const safeF: FeedingLog[] = Array.isArray(f) ? f : [];
       const safeT: ToiletLog[] = Array.isArray(t) ? t : [];
       const safeW: WeightLog[] = Array.isArray(w) ? w : [];
       const safeM: MedicationLog[] = Array.isArray(m) ? m : [];
+      const safeC: CareLog[] = Array.isArray(c) ? c : [];
 
       setFeedings(safeF);
       setToilets(safeT);
       setWeights(safeW);
       setMedications(safeM);
+      setCares(safeC);
 
       const map: Record<string, DayRecord> = {};
       const days = eachDayOfInterval({ start: startOfMonth(month), end: endOfMonth(month) });
       for (const d of days) {
         const key = format(d, "yyyy-MM-dd");
-        map[key] = { feeding: false, toilet: false, weight: false, medication: false };
+        map[key] = { feeding: false, toilet: false, weight: false, medication: false, care: false };
       }
 
       const dateOf = (iso: string) => format(new Date(iso), "yyyy-MM-dd");
@@ -69,6 +75,7 @@ export default function CalendarPage() {
       safeT.forEach((x) => { const k = dateOf(x.loggedAt); if (map[k]) map[k].toilet = true; });
       safeW.forEach((x) => { const k = dateOf(x.measuredAt); if (map[k]) map[k].weight = true; });
       safeM.forEach((x) => { const k = dateOf(x.givenAt); if (map[k]) map[k].medication = true; });
+      safeC.forEach((x) => { const k = dateOf(x.doneAt); if (map[k]) map[k].care = true; });
 
       setRecords(map);
       setLoading(false);
@@ -112,6 +119,7 @@ export default function CalendarPage() {
             { color: "bg-sky-300", label: "トイレ" },
             { color: "bg-emerald-300", label: "体重" },
             { color: "bg-violet-300", label: "お薬" },
+            { color: "bg-amber-300", label: "ケア" },
           ].map((l) => (
             <div key={l.label} className="flex items-center gap-1">
               <span className={`w-2 h-2 rounded-full ${l.color}`} />
@@ -141,7 +149,7 @@ export default function CalendarPage() {
                 const rec = records[key];
                 const dow = getDay(day);
                 const today = isToday(day);
-                const hasAny = rec && (rec.feeding || rec.toilet || rec.weight || rec.medication);
+                const hasAny = rec && (rec.feeding || rec.toilet || rec.weight || rec.medication || rec.care);
                 return (
                   <button
                     key={key}
@@ -163,6 +171,7 @@ export default function CalendarPage() {
                       {rec?.toilet && <span className="w-1.5 h-1.5 rounded-full bg-sky-300" />}
                       {rec?.weight && <span className="w-1.5 h-1.5 rounded-full bg-emerald-300" />}
                       {rec?.medication && <span className="w-1.5 h-1.5 rounded-full bg-violet-300" />}
+                      {rec?.care && <span className="w-1.5 h-1.5 rounded-full bg-amber-300" />}
                     </div>
                   </button>
                 );
@@ -178,6 +187,7 @@ export default function CalendarPage() {
         toilets={toilets}
         weights={weights}
         medications={medications}
+        cares={cares}
         onClose={() => setSelectedDay(null)}
       />
 
@@ -187,13 +197,14 @@ export default function CalendarPage() {
 }
 
 function DaySheet({
-  day, feedings, toilets, weights, medications, onClose,
+  day, feedings, toilets, weights, medications, cares, onClose,
 }: {
   day: string | null;
   feedings: FeedingLog[];
   toilets: ToiletLog[];
   weights: WeightLog[];
   medications: MedicationLog[];
+  cares: CareLog[];
   onClose: () => void;
 }) {
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -217,6 +228,8 @@ function DaySheet({
     .sort((a, b) => new Date(a.measuredAt).getTime() - new Date(b.measuredAt).getTime());
   const dayMeds = medications.filter((x) => dateOf(x.givenAt) === day)
     .sort((a, b) => new Date(a.givenAt).getTime() - new Date(b.givenAt).getTime());
+  const dayCares = cares.filter((x) => dateOf(x.doneAt) === day)
+    .sort((a, b) => new Date(a.doneAt).getTime() - new Date(b.doneAt).getTime());
 
   const dateLabel = format(new Date(day), "M月d日(E)", { locale: ja });
 
@@ -256,7 +269,7 @@ function DaySheet({
 
         {/* コンテンツ */}
         <div className="overflow-y-auto" style={{ maxHeight: "calc(70vh - 80px)" }}>
-          {dayFeedings.length === 0 && dayToilets.length === 0 && dayWeights.length === 0 && dayMeds.length === 0 ? (
+          {dayFeedings.length === 0 && dayToilets.length === 0 && dayWeights.length === 0 && dayMeds.length === 0 && dayCares.length === 0 ? (
             <p className="text-center text-sm text-stone-300 py-10">この日の記録はありません</p>
           ) : (
             <div className="divide-y divide-stone-50">
@@ -312,6 +325,16 @@ function DaySheet({
                     <p className="text-xs text-stone-400">{m.user.name}</p>
                   </div>
                   <p className="text-xs text-stone-400 tabular-nums">{format(new Date(m.givenAt), "HH:mm")}</p>
+                </div>
+              ))}
+              {dayCares.map((c) => (
+                <div key={c.id} className="px-5 py-3 flex items-center gap-3">
+                  <span className="text-xl w-7 text-center">🐾</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-stone-700">{c.type}</p>
+                    <p className="text-xs text-stone-400">{c.user.name}</p>
+                  </div>
+                  <p className="text-xs text-stone-400 tabular-nums">{format(new Date(c.doneAt), "HH:mm")}</p>
                 </div>
               ))}
             </div>

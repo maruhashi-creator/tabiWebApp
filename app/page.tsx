@@ -54,22 +54,25 @@ export default function Dashboard() {
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
-    const cats = await fetch("/api/cat").then((r) => r.json());
-    const c: Cat = cats[0];
-    if (!c) { setLoading(false); return; }
-    setCat(c);
-    const [f, t, w, a] = await Promise.all([
-      fetch(`/api/feeding?catId=${c.id}&date=${today}`).then((r) => r.json()).catch(() => []),
-      fetch(`/api/toilet?catId=${c.id}&date=${today}`).then((r) => r.json()).catch(() => []),
-      fetch(`/api/weight?catId=${c.id}&limit=1`).then((r) => r.json()).catch(() => []),
-      fetch(`/api/anomaly?catId=${c.id}`).then((r) => r.json()).catch(() => []),
-    ]);
-    setFeedings(Array.isArray(f) ? f : []);
-    setToilets(Array.isArray(t) ? t : []);
-    setLatestWeight(Array.isArray(w) ? (w[0] ?? null) : null);
-    setAnomalies(Array.isArray(a) ? a : []);
-    setLoading(false);
-    setRefreshing(false);
+    try {
+      const cats = await fetch("/api/cat").then((r) => r.json());
+      const c: Cat = cats[0];
+      if (!c) return;
+      setCat(c);
+      const [f, t, w, a] = await Promise.all([
+        fetch(`/api/feeding?catId=${c.id}&date=${today}`).then((r) => r.json()).catch(() => []),
+        fetch(`/api/toilet?catId=${c.id}&date=${today}`).then((r) => r.json()).catch(() => []),
+        fetch(`/api/weight?catId=${c.id}&limit=1`).then((r) => r.json()).catch(() => []),
+        fetch(`/api/anomaly?catId=${c.id}`).then((r) => r.json()).catch(() => []),
+      ]);
+      setFeedings(Array.isArray(f) ? f : []);
+      setToilets(Array.isArray(t) ? t : []);
+      setLatestWeight(Array.isArray(w) ? (w[0] ?? null) : null);
+      setAnomalies(Array.isArray(a) ? a : []);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [today]);
 
   useEffect(() => { load(); }, [load]);

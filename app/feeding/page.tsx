@@ -15,7 +15,14 @@ const FOOD_TYPES = [
   { key: "その他", emoji: "🍽️" },
 ];
 
-const PRESETS = [5, 10, 15, 20];
+const PRESETS: Record<string, number[]> = {
+  ミルク: [5, 10, 15],
+  おやつ: [2, 5, 10],
+  default: [5, 10, 15, 20],
+};
+function getPresets(foodType: string) {
+  return PRESETS[foodType] ?? PRESETS.default;
+}
 
 const MESSAGES = [
   "何を何グラム食べたかな？",
@@ -64,7 +71,7 @@ export default function FeedingPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/cat").then((r) => r.json()).then((cats) => setCat(cats[0] ?? null));
+    fetch("/api/cat").then((r) => r.json()).then((cats) => setCat(cats[0] ?? null)).catch(() => {});
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -76,7 +83,13 @@ export default function FeedingPage() {
       const res = await fetch("/api/feeding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ catId: cat.id, foodType, amount: Number(amount), fedAt: new Date(`${format(new Date(), "yyyy-MM-dd")}T${fedAt}:00`).toISOString(), note }),
+        body: JSON.stringify({
+          catId: cat.id,
+          foodType,
+          amount: Number(amount),
+          fedAt: new Date(`${format(new Date(), "yyyy-MM-dd")}T${fedAt}:00+09:00`).toISOString(),
+          note,
+        }),
       });
       if (res.ok) {
         setSuccess(true);
@@ -151,7 +164,9 @@ export default function FeedingPage() {
           {/* 給餌量 */}
           <div className="card p-5 space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-stone-400 mb-3 text-center">給餌量（g）</label>
+              <label className="block text-xs font-semibold text-stone-400 mb-3 text-center">
+                給餌量（{foodType === "ミルク" ? "ml" : "g"}）
+              </label>
               <input
                 type="number"
                 min={1}
@@ -165,8 +180,8 @@ export default function FeedingPage() {
                 autoFocus
               />
             </div>
-            <div className="grid grid-cols-4 gap-2">
-              {PRESETS.map((g) => (
+            <div className={`grid gap-2 ${getPresets(foodType).length === 3 ? "grid-cols-3" : "grid-cols-4"}`}>
+              {getPresets(foodType).map((g) => (
                 <button
                   key={g}
                   type="button"
@@ -177,7 +192,7 @@ export default function FeedingPage() {
                       : "bg-white text-stone-600 border-stone-200 hover:border-stone-300"
                   }`}
                 >
-                  {g}g
+                  {g}{foodType === "ミルク" ? "ml" : "g"}
                 </button>
               ))}
             </div>

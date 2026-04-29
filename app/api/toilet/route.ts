@@ -12,11 +12,19 @@ export async function GET(req: NextRequest) {
   const date = searchParams.get("date");
   const catId = searchParams.get("catId");
 
+  const from = searchParams.get("from");
+  const to = searchParams.get("to");
+
   const where: Record<string, unknown> = { catId: catId ?? undefined };
   if (date) {
     where.loggedAt = {
       gte: new Date(`${date}T00:00:00.000+09:00`),
       lte: new Date(`${date}T23:59:59.999+09:00`),
+    };
+  } else if (from && to) {
+    where.loggedAt = {
+      gte: new Date(`${from}T00:00:00.000+09:00`),
+      lte: new Date(`${to}T23:59:59.999+09:00`),
     };
   }
 

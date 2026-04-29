@@ -5,10 +5,10 @@ import { usePathname } from "next/navigation";
 
 const items = [
   { href: "/", label: "ホーム", emoji: "🏠" },
-  { href: "/feeding", label: "ごはん", emoji: "🍚" },
-  { href: "/toilet", label: "トイレ", emoji: "🚿" },
-  { href: "/weight", label: "体重", emoji: "⚖️" },
-  { href: "/medication", label: "お薬", emoji: "💊" },
+  { href: "/record", label: "記録", emoji: "✏️" },
+  { href: "/graph", label: "グラフ", emoji: "📈" },
+  { href: "/calendar", label: "カレンダー", emoji: "📅" },
+  { href: "/settings", label: "設定", emoji: "⚙️" },
 ];
 
 export function BottomNav() {

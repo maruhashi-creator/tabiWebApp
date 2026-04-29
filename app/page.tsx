@@ -176,19 +176,7 @@ export default function Dashboard() {
         )}
 
         {/* 異常検知アラート */}
-        {anomalies.map((a, i) => (
-          <div
-            key={i}
-            className={`card p-4 flex items-center gap-3 border ${
-              a.level === "alert" ? "border-red-200 bg-red-50" : "border-amber-100 bg-amber-50"
-            }`}
-          >
-            <span className="text-2xl">{a.level === "alert" ? "⚠️" : "🔔"}</span>
-            <p className={`text-sm font-medium ${a.level === "alert" ? "text-red-600" : "text-amber-700"}`}>
-              {a.message}
-            </p>
-          </div>
-        ))}
+        <AlertCarousel anomalies={anomalies} />
 
         {/* 全完了 */}
         {allDone && anomalies.length === 0 && (
@@ -293,6 +281,60 @@ function StatusCard({ emoji, label, value, done }: { emoji: string; label: strin
       {label && <p className="text-[10px] text-stone-400 mb-1">{label}</p>}
       <p className={`text-xs font-bold ${done ? "text-stone-700" : "text-stone-300"}`}>{value}</p>
       {done && <div className="w-1.5 h-1.5 bg-[#F69F9A] rounded-full mx-auto mt-1.5" />}
+    </div>
+  );
+}
+
+function AlertCarousel({ anomalies }: { anomalies: Anomaly[] }) {
+  const [index, setIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    setIndex(0);
+    setVisible(true);
+  }, [anomalies]);
+
+  useEffect(() => {
+    if (anomalies.length <= 1) return;
+    const timer = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setIndex((i) => (i + 1) % anomalies.length);
+        setVisible(true);
+      }, 400);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [anomalies.length]);
+
+  if (anomalies.length === 0) return null;
+  const a = anomalies[index];
+
+  return (
+    <div
+      className={`card p-4 flex items-center gap-3 border transition-opacity duration-400 ${
+        visible ? "opacity-100" : "opacity-0"
+      } ${a.level === "alert" ? "border-red-200 bg-red-50" : "border-amber-100 bg-amber-50"}`}
+    >
+      <span className="text-2xl flex-shrink-0">{a.level === "alert" ? "⚠️" : "🔔"}</span>
+      <div className="flex-1 min-w-0">
+        <p className={`text-sm font-medium ${a.level === "alert" ? "text-red-600" : "text-amber-700"}`}>
+          {a.message}
+        </p>
+        {anomalies.length > 1 && (
+          <div className="flex gap-1 mt-1.5">
+            {anomalies.map((_, i) => (
+              <span
+                key={i}
+                className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                  i === index
+                    ? a.level === "alert" ? "bg-red-400" : "bg-amber-400"
+                    : "bg-stone-200"
+                }`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

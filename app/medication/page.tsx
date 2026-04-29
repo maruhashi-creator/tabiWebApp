@@ -156,7 +156,7 @@ export default function MedicationPage() {
               <label className="block text-xs font-semibold text-stone-400 mb-1.5">投薬時刻</label>
               <input
                 type="time"
-                step={600}
+                step={300}
                 value={givenAt}
                 onChange={(e) => setGivenAt(e.target.value)}
                 className="input"

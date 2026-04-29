@@ -179,7 +179,7 @@ function FeedingForm({ cat }: { cat: Cat }) {
       <div className="card p-5 space-y-4">
         <div>
           <label className="block text-xs font-semibold text-stone-400 mb-1.5">時刻</label>
-          <input type="time" step={600} value={fedAt} onChange={(e) => setFedAt(e.target.value)} className="input" required />
+          <input type="time" step={300} value={fedAt} onChange={(e) => setFedAt(e.target.value)} className="input" required />
         </div>
         <div>
           <label className="block text-xs font-semibold text-stone-400 mb-1.5">メモ（任意）</label>
@@ -265,7 +265,7 @@ function ToiletForm({ cat }: { cat: Cat }) {
       <div className="card p-5 space-y-4">
         <div>
           <label className="block text-xs font-semibold text-stone-400 mb-1.5">時刻</label>
-          <input type="time" step={600} value={loggedAt} onChange={(e) => setLoggedAt(e.target.value)} className="input" required />
+          <input type="time" step={300} value={loggedAt} onChange={(e) => setLoggedAt(e.target.value)} className="input" required />
         </div>
         <div>
           <label className="block text-xs font-semibold text-stone-400 mb-1.5">状態メモ（任意）</label>
@@ -336,7 +336,7 @@ function WeightForm({ cat }: { cat: Cat }) {
       <div className="card p-5 space-y-4">
         <div>
           <label className="block text-xs font-semibold text-stone-400 mb-1.5">計測時刻</label>
-          <input type="time" step={600} value={measuredAt} onChange={(e) => setMeasuredAt(e.target.value)} className="input" required />
+          <input type="time" step={300} value={measuredAt} onChange={(e) => setMeasuredAt(e.target.value)} className="input" required />
         </div>
         <div>
           <label className="block text-xs font-semibold text-stone-400 mb-1.5">メモ（任意）</label>
@@ -409,7 +409,7 @@ function MedicationForm({ cat }: { cat: Cat }) {
       <div className="card p-5 space-y-4">
         <div>
           <label className="block text-xs font-semibold text-stone-400 mb-1.5">投薬時刻</label>
-          <input type="time" step={600} value={givenAt} onChange={(e) => setGivenAt(e.target.value)} className="input" required />
+          <input type="time" step={300} value={givenAt} onChange={(e) => setGivenAt(e.target.value)} className="input" required />
         </div>
         <div>
           <label className="block text-xs font-semibold text-stone-400 mb-1.5">メモ（任意）</label>

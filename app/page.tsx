@@ -301,8 +301,8 @@ function AlertCarousel({ anomalies }: { anomalies: Anomaly[] }) {
       setTimeout(() => {
         setIndex((i) => (i + 1) % anomalies.length);
         setVisible(true);
-      }, 400);
-    }, 3000);
+      }, 700);
+    }, 4000);
     return () => clearInterval(timer);
   }, [anomalies.length]);
 
@@ -311,7 +311,7 @@ function AlertCarousel({ anomalies }: { anomalies: Anomaly[] }) {
 
   return (
     <div
-      className={`card p-4 flex items-center gap-3 border transition-opacity duration-400 ${
+      className={`card p-4 flex items-center gap-3 border transition-opacity duration-700 ${
         visible ? "opacity-100" : "opacity-0"
       } ${a.level === "alert" ? "border-red-200 bg-red-50" : "border-amber-100 bg-amber-50"}`}
     >

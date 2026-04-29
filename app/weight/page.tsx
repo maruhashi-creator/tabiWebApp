@@ -142,7 +142,7 @@ export default function WeightPage() {
               <label className="block text-xs font-semibold text-stone-400 mb-1.5">計測時刻</label>
               <input
                 type="time"
-                step={600}
+                step={300}
                 value={measuredAt}
                 onChange={(e) => setMeasuredAt(e.target.value)}
                 className="input"

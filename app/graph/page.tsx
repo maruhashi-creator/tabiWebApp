@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { format, subDays } from "date-fns";
-import { BottomNav } from "@/components/BottomNav";
 
 interface Cat { id: string; name: string }
 interface WeightLog { id: string; weight: number; measuredAt: string }
@@ -69,7 +68,6 @@ export default function GraphPage() {
         </section>
       </main>
 
-      <BottomNav />
     </div>
   );
 }

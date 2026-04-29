@@ -20,7 +20,7 @@ export default function Template({ children }: { children: React.ReactNode }) {
     const el = ref.current;
     if (!el) return;
     const handleExit = () => {
-      el.style.transition = "opacity 150ms ease";
+      el.style.transition = "opacity 250ms ease";
       el.style.opacity = "0";
     };
     window.addEventListener("page-exit", handleExit);

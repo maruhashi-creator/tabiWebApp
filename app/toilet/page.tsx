@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { BottomNav } from "@/components/BottomNav";
 
 interface Cat { id: string; name: string }
 
@@ -201,7 +200,6 @@ export default function ToiletPage() {
         </form>
       </main>
 
-      <BottomNav />
     </div>
   );
 }

@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths, isToday } from "date-fns";
 import { ja } from "date-fns/locale";
-import { BottomNav } from "@/components/BottomNav";
 
 interface Cat { id: string; name: string }
 interface FeedingLog { id: string; amount: number; foodType: string | null; fedAt: string; user: { name: string } }
@@ -198,7 +197,6 @@ export default function CalendarPage() {
         onClose={() => setSelectedDay(null)}
       />
 
-      <BottomNav />
     </div>
   );
 }

@@ -17,7 +17,7 @@ export function BottomNav() {
   const handleNavigate = (href: string) => {
     if (pathname === href) return;
     window.dispatchEvent(new Event("page-exit"));
-    setTimeout(() => router.push(href), 150);
+    setTimeout(() => router.push(href), 250);
   };
 
   return (

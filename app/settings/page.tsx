@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { signOut, useSession } from "next-auth/react";
-import { BottomNav } from "@/components/BottomNav";
 
 interface Cat { id: string; name: string; breed: string | null; birthday: string | null }
 
@@ -132,7 +131,6 @@ export default function SettingsPage() {
         </div>
       </main>
 
-      <BottomNav />
     </div>
   );
 }

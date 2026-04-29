@@ -11,8 +11,8 @@ const TABS: { key: Tab; emoji: string; label: string }[] = [
   { key: "feeding", emoji: "🍚", label: "ごはん" },
   { key: "toilet", emoji: "🚿", label: "トイレ" },
   { key: "weight", emoji: "⚖️", label: "体重" },
-  { key: "medication", emoji: "💊", label: "お薬" },
   { key: "care", emoji: "🐾", label: "ケア" },
+  { key: "medication", emoji: "💊", label: "お薬" },
 ];
 
 export default function RecordPage() {

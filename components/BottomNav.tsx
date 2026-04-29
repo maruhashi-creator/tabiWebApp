@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 const items = [
   { href: "/", label: "ホーム", emoji: "🏠" },
@@ -13,15 +12,23 @@ const items = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleNavigate = (href: string) => {
+    if (pathname === href) return;
+    window.dispatchEvent(new Event("page-exit"));
+    setTimeout(() => router.push(href), 150);
+  };
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-100 safe-area-pb z-50">
       <div className="max-w-lg mx-auto flex">
         {items.map((item) => {
           const active = pathname === item.href;
           return (
-            <Link
+            <button
               key={item.href}
-              href={item.href}
+              onClick={() => handleNavigate(item.href)}
               className={`flex-1 flex flex-col items-center py-2 pt-3 gap-0.5 transition-colors ${
                 active ? "text-[#F69F9A]" : "text-stone-400 hover:text-stone-600"
               }`}
@@ -30,7 +37,7 @@ export function BottomNav() {
               <span className={`text-[10px] font-medium ${active ? "text-[#F69F9A]" : ""}`}>
                 {item.label}
               </span>
-            </Link>
+            </button>
           );
         })}
       </div>

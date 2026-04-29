@@ -8,7 +8,7 @@ import { ja } from "date-fns/locale";
 import { BottomNav } from "@/components/BottomNav";
 import Link from "next/link";
 
-interface FeedingLog { id: string; amount: number; foodType: string | null; fedAt: string; user: { name: string } }
+interface FeedingLog { id: string; amount: number; foodType: string | null; note: string | null; fedAt: string; user: { name: string } }
 interface ToiletLog { id: string; type: string; count: number; loggedAt: string; user: { name: string } }
 interface WeightLog { id: string; weight: number; measuredAt: string }
 interface Cat { id: string; name: string; breed: string | null; birthday: string | null }
@@ -223,7 +223,7 @@ export default function Dashboard() {
                 source: "feeding" as const,
                 time: f.fedAt,
                 emoji: foodEmoji(f.foodType),
-                label: `${f.foodType ?? "ごはん"} ${f.amount}g`,
+                label: `${f.foodType ?? "ごはん"}${f.note ? ` ${f.note}` : ""} ${f.amount}g`,
                 by: f.user.name,
               })), ...toilets.map((t) => ({
                 id: t.id,

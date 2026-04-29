@@ -22,8 +22,12 @@ export async function GET(req: NextRequest) {
 
   const now = new Date();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const todayStart = new Date(`${now.toISOString().slice(0, 10)}T00:00:00.000Z`);
-  const todayEnd = new Date(`${now.toISOString().slice(0, 10)}T23:59:59.999Z`);
+  const jstToday = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const todayDate = jstToday.toISOString().slice(0, 10);
+  const todayStart = new Date(`${todayDate}T00:00:00.000+09:00`);
+  const todayEnd = new Date(`${todayDate}T23:59:59.999+09:00`);
+
+  const toJstDay = (date: Date) => new Date(date.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
   const [weights, toilets, feedings] = await Promise.all([
     prisma.weightLog.findMany({
@@ -50,24 +54,22 @@ export async function GET(req: NextRequest) {
       anomalies.push({
         type: "weight",
         level: changePct >= 0.15 ? "alert" : "warn",
-        message: `体重が前回比 ${(changePct * 100).toFixed(1)}% ${dir}しています`,
+        message: changePct >= 0.15 ? "体重が大きく変化しているかも" : "体重に変化があるかも",
       });
     }
   }
 
   // Urine anomaly: today vs 7-day daily average
   const todayUrine = toilets
-    .filter((t) => t.type === "URINE" && t.loggedAt >= todayStart && t.loggedAt <= todayEnd)
+    .filter((t) => t.type === "URINE" && toJstDay(t.loggedAt) === todayDate)
     .reduce((s, t) => s + t.count, 0);
 
-  const pastUrine = toilets.filter(
-    (t) => t.type === "URINE" && t.loggedAt < todayStart
-  );
+  const pastUrine = toilets.filter((t) => t.type === "URINE" && toJstDay(t.loggedAt) !== todayDate);
   if (pastUrine.length > 0) {
-    // group by day to get daily average
+    // group by local day to get daily average
     const byDay = new Map<string, number>();
     for (const t of pastUrine) {
-      const day = t.loggedAt.toISOString().slice(0, 10);
+      const day = toJstDay(t.loggedAt);
       byDay.set(day, (byDay.get(day) ?? 0) + t.count);
     }
     const avgUrine = Array.from(byDay.values()).reduce((s, v) => s + v, 0) / byDay.size;
@@ -76,22 +78,22 @@ export async function GET(req: NextRequest) {
         type: "urine",
         level: todayUrine === 0 ? "alert" : "warn",
         message: todayUrine === 0
-          ? "今日まだおしっこが記録されていません"
-          : `おしっこの回数が平均より少ないです（平均 ${avgUrine.toFixed(1)} 回）`,
+          ? "今日おしっこの記録がないよ"
+          : "おしっこの回数が少ないかも",
       });
     }
   }
 
   // Feeding anomaly: today vs 7-day daily average
   const todayFed = feedings
-    .filter((f) => f.fedAt >= todayStart && f.fedAt <= todayEnd)
+    .filter((f) => toJstDay(f.fedAt) === todayDate)
     .reduce((s, f) => s + f.amount, 0);
 
-  const pastFeedings = feedings.filter((f) => f.fedAt < todayStart);
+  const pastFeedings = feedings.filter((f) => toJstDay(f.fedAt) !== todayDate);
   if (pastFeedings.length > 0) {
     const byDay = new Map<string, number>();
     for (const f of pastFeedings) {
-      const day = f.fedAt.toISOString().slice(0, 10);
+      const day = toJstDay(f.fedAt);
       byDay.set(day, (byDay.get(day) ?? 0) + f.amount);
     }
     const avgFed = Array.from(byDay.values()).reduce((s, v) => s + v, 0) / byDay.size;
@@ -100,8 +102,8 @@ export async function GET(req: NextRequest) {
         type: "feeding",
         level: todayFed === 0 ? "alert" : "warn",
         message: todayFed === 0
-          ? "今日まだごはんが記録されていません"
-          : `食事量が平均より少ないです（平均 ${avgFed.toFixed(0)}g）`,
+          ? "今日ごはんの記録がないよ"
+          : "食事量が平均より少ないかも",
       });
     }
   }

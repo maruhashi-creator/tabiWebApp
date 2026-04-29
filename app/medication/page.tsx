@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { BottomNav } from "@/components/BottomNav";
 
 interface Cat { id: string; name: string }
 interface MedicationLog { id: string; name: string; dosage: string | null; givenAt: string; note: string | null; user: { name: string } }
@@ -210,7 +209,6 @@ export default function MedicationPage() {
         )}
       </main>
 
-      <BottomNav />
     </div>
   );
 }

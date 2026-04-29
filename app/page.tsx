@@ -5,7 +5,6 @@ import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { format, differenceInYears, differenceInMonths } from "date-fns";
 import { ja } from "date-fns/locale";
-import { BottomNav } from "@/components/BottomNav";
 import Link from "next/link";
 
 interface FeedingLog { id: string; amount: number; foodType: string | null; note: string | null; fedAt: string; user: { name: string } }
@@ -265,7 +264,6 @@ export default function Dashboard() {
         <p className="text-center text-[10px] text-stone-400 pb-2">{process.env.NEXT_PUBLIC_COMMIT_SHA}</p>
       </main>
 
-      <BottomNav />
     </div>
   );
 }

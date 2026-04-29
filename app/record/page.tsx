@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { BottomNav } from "@/components/BottomNav";
 
 interface Cat { id: string; name: string }
 type Tab = "feeding" | "toilet" | "weight" | "medication" | "care";
@@ -70,7 +69,6 @@ export default function RecordPage() {
         {tab === "care" && <CareForm cat={cat} />}
       </main>
 
-      <BottomNav />
     </div>
   );
 }

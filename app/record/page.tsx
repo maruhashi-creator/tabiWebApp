@@ -20,7 +20,7 @@ export default function RecordPage() {
   const [cat, setCat] = useState<Cat | null>(null);
 
   useEffect(() => {
-    fetch("/api/cat").then((r) => r.json()).then((cats) => setCat(cats[0] ?? null));
+    fetch("/api/cat").then((r) => r.json()).then((cats) => setCat(cats[0] ?? null)).catch(() => {});
   }, []);
 
   return (

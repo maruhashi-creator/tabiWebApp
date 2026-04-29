@@ -71,7 +71,7 @@ export default function FeedingPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/cat").then((r) => r.json()).then((cats) => setCat(cats[0] ?? null));
+    fetch("/api/cat").then((r) => r.json()).then((cats) => setCat(cats[0] ?? null)).catch(() => {});
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {

@@ -60,8 +60,8 @@ export default function MedicationPage() {
       const c = cats[0];
       if (!c) return;
       setCat(c);
-      fetch(`/api/medication?catId=${c.id}&limit=10`).then((r) => r.json()).then(setHistory);
-    });
+      fetch(`/api/medication?catId=${c.id}&limit=10`).then((r) => r.json()).then(setHistory).catch(() => {});
+    }).catch(() => {});
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {

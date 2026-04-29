@@ -16,21 +16,24 @@ export default function GraphPage() {
 
   useEffect(() => {
     (async () => {
-      const cats = await fetch("/api/cat").then((r) => r.json());
-      const c: Cat = cats[0];
-      if (!c) { setLoading(false); return; }
-      setCat(c);
+      try {
+        const cats = await fetch("/api/cat").then((r) => r.json());
+        const c: Cat = cats[0];
+        if (!c) { setLoading(false); return; }
+        setCat(c);
 
-      const from = format(subDays(new Date(), 29), "yyyy-MM-dd");
-      const to = format(new Date(), "yyyy-MM-dd");
+        const from = format(subDays(new Date(), 29), "yyyy-MM-dd");
+        const to = format(new Date(), "yyyy-MM-dd");
 
-      const [w, f] = await Promise.all([
-        fetch(`/api/weight?catId=${c.id}&limit=30`).then((r) => r.json()).catch(() => []),
-        fetch(`/api/feeding?catId=${c.id}&from=${from}&to=${to}`).then((r) => r.json()).catch(() => []),
-      ]);
-      setWeights(Array.isArray(w) ? w : []);
-      setFeedings(Array.isArray(f) ? f : []);
-      setLoading(false);
+        const [w, f] = await Promise.all([
+          fetch(`/api/weight?catId=${c.id}&limit=30`).then((r) => r.json()).catch(() => []),
+          fetch(`/api/feeding?catId=${c.id}&from=${from}&to=${to}`).then((r) => r.json()).catch(() => []),
+        ]);
+        setWeights(Array.isArray(w) ? w : []);
+        setFeedings(Array.isArray(f) ? f : []);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
 

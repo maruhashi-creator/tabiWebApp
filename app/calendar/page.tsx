@@ -35,7 +35,7 @@ export default function CalendarPage() {
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/cat").then((r) => r.json()).then((cats) => setCat(cats[0] ?? null));
+    fetch("/api/cat").then((r) => r.json()).then((cats) => setCat(cats[0] ?? null)).catch(() => {});
   }, []);
 
   useEffect(() => {

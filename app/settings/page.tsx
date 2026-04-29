@@ -25,7 +25,7 @@ export default function SettingsPage() {
       setName(c.name);
       setBreed(c.breed ?? "");
       setBirthday(c.birthday ? format(new Date(c.birthday), "yyyy-MM-dd") : "");
-    });
+    }).catch(() => {});
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {

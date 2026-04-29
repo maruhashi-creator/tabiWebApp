@@ -82,6 +82,17 @@ export default function CalendarPage() {
     });
   }, [cat, month]);
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F7F5F2]">
+        <div className="text-center space-y-3">
+          <div className="text-5xl animate-bounce">📅</div>
+          <p className="text-sm text-stone-400">読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
+
   const days = eachDayOfInterval({ start: startOfMonth(month), end: endOfMonth(month) });
   const startDow = getDay(startOfMonth(month));
   const cells: (Date | null)[] = [...Array(startDow).fill(null), ...days];
@@ -139,10 +150,7 @@ export default function CalendarPage() {
           </div>
 
           {/* 日付グリッド */}
-          {loading ? (
-            <div className="py-16 text-center text-stone-300 text-sm">読み込み中...</div>
-          ) : (
-            <div className="grid grid-cols-7 divide-x divide-y divide-stone-50">
+          <div className="grid grid-cols-7 divide-x divide-y divide-stone-50">
               {cells.map((day, i) => {
                 if (!day) return <div key={i} className="min-h-[52px] bg-stone-50/50" />;
                 const key = format(day, "yyyy-MM-dd");
@@ -177,7 +185,6 @@ export default function CalendarPage() {
                 );
               })}
             </div>
-          )}
         </div>
       </main>
 

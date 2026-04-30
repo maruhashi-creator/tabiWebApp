@@ -35,6 +35,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           document.addEventListener('touchmove', function(e) {
             if (e.touches.length > 1) e.preventDefault();
           }, { passive: false });
+          document.addEventListener('focusout', function() {
+            var viewport = document.querySelector('meta[name=viewport]');
+            if (viewport) {
+              viewport.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no');
+            }
+          });
         `}} />
       </head>
       <body className={inter.className}>

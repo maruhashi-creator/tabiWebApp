@@ -497,13 +497,19 @@ function CareForm({ cat }: { cat: Cat }) {
     }
   }
 
-  function lastLabel(type: string, cycle?: number): { text: string; overdue: boolean } {
+  function lastLabel(type: string, cycle?: number): { text: string; overdue: boolean; nextDue?: string } {
     const log = lastRecords[type];
     if (!log) return { text: "未記録", overdue: !!cycle };
     const days = daysSince(log.doneAt);
     const overdue = !!cycle && days > cycle;
-    if (days === 0) return { text: "今日", overdue: false };
-    return { text: `${days}日前`, overdue };
+    let nextDue: string | undefined;
+    if (cycle) {
+      const d = new Date(log.doneAt);
+      d.setDate(d.getDate() + cycle);
+      nextDue = `${d.getMonth() + 1}月${d.getDate()}日`;
+    }
+    if (days === 0) return { text: "今日", overdue: false, nextDue };
+    return { text: `${days}日前`, overdue, nextDue };
   }
 
   return (
@@ -514,14 +520,16 @@ function CareForm({ cat }: { cat: Cat }) {
           <div className="card overflow-hidden divide-y divide-stone-50">
             {group.items.map((item) => {
               const done = justDone[item.key];
-              const { text, overdue } = lastLabel(item.key, item.cycle);
+              const { text, overdue, nextDue } = lastLabel(item.key, item.cycle);
               return (
                 <div key={item.key} className="px-4 py-3 flex items-center gap-3">
                   <span className="text-xl w-7 text-center">{item.emoji}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-stone-700">{item.key}</p>
                     <p className={`text-xs ${overdue ? "text-amber-400 font-medium" : "text-stone-400"}`}>
-                      {text}{overdue ? "（期限超過）" : item.cycle ? `（${item.cycle}日ごと）` : ""}
+                      {nextDue
+                        ? `次回 ${nextDue}${overdue ? "・超過" : ""}`
+                        : text + (item.cycle ? `（${item.cycle}日ごと）` : "")}
                     </p>
                   </div>
                   <button

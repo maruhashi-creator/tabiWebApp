@@ -120,6 +120,15 @@ Prismaに `CareLog` モデルを追加し `prisma db push` 済み。
 - 「その他」選択時のみ `placeholder` を「絵文字を入力 🥦 🍠 🐓 🐟️ など」に変更
 - その他の種類では「完食、残しあり など」のまま
 
+### ページ遷移アニメーション（フェードアウト・フェードイン）
+
+Next.js App Router の `app/template.tsx`（ページ遷移ごとに再マウントされる特殊ファイル）を使用。
+
+- **フェードイン**: `template.tsx` がマウント時に opacity 0 → 1（250ms ease）
+- **フェードアウト**: BottomNav のボタンクリック時に `page-exit` カスタムイベントを発火 → `template.tsx` が opacity 1 → 0（150ms ease）→ 150ms後に `router.push()`
+- BottomNav 自体は `layout.tsx` に属するため遷移中も固定表示のまま
+- `Link` コンポーネントから `button + useRouter` に変更し、フェードアウト後に遷移するよう制御
+
 ---
 
 ## API一覧

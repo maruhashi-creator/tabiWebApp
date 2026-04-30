@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [guestLoading, setGuestLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -26,6 +27,27 @@ export default function LoginPage() {
       setError("通信エラーが発生しました");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleGuestLogin() {
+    setError("");
+    setGuestLoading(true);
+    try {
+      const res = await signIn("credentials", {
+        email: "guest@tabi.app",
+        password: "guest",
+        redirect: false,
+      });
+      if (res?.ok) {
+        router.push("/");
+      } else {
+        setError("ゲストログインに失敗しました");
+      }
+    } catch {
+      setError("通信エラーが発生しました");
+    } finally {
+      setGuestLoading(false);
     }
   }
 
@@ -79,6 +101,21 @@ export default function LoginPage() {
             {loading ? "ログイン中..." : "ログイン"}
           </button>
         </form>
+
+        <div className="relative flex items-center pt-2">
+          <div className="flex-1 border-t border-stone-100" />
+          <span className="px-3 text-xs text-stone-300">または</span>
+          <div className="flex-1 border-t border-stone-100" />
+        </div>
+
+        <button
+          type="button"
+          onClick={handleGuestLogin}
+          disabled={guestLoading}
+          className="w-full py-3.5 text-sm rounded-2xl border border-stone-200 text-stone-500 hover:bg-stone-50 transition-colors"
+        >
+          {guestLoading ? "ログイン中..." : "ゲストとして見る"}
+        </button>
       </div>
 
       <p className="text-xs text-stone-300 mt-8">たびと一緒に、毎日を大切に 🐾</p>

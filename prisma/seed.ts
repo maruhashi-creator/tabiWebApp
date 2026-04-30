@@ -5,6 +5,7 @@ const prisma = new PrismaClient();
 
 async function main() {
   const hashed = await bcrypt.hash("tabi2021", 10);
+  const guestHashed = await bcrypt.hash("guest", 10);
 
   await prisma.user.upsert({
     where: { email: "kazuyamaruhashi@gmail.com" },
@@ -16,6 +17,12 @@ async function main() {
     where: { email: "route3973@gmail.com" },
     update: {},
     create: { email: "route3973@gmail.com", password: hashed, name: "おかあさん" },
+  });
+
+  await prisma.user.upsert({
+    where: { email: "guest@tabi.app" },
+    update: {},
+    create: { email: "guest@tabi.app", password: guestHashed, name: "ゲスト" },
   });
 
   await prisma.cat.upsert({

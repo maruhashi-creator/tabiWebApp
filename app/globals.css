@@ -27,9 +27,11 @@
     box-sizing: border-box;
   }
 
-  input[type="time"].input {
+  input[type="time"].input,
+  input[type="date"].input {
     min-width: 0;
     max-width: 100%;
+    width: 100%;
   }
 }
 

@@ -6,13 +6,20 @@ import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [guestLoading, setGuestLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  function switchMode(next: "login" | "register") {
+    setMode(next);
+    setError("");
+  }
+
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -22,6 +29,34 @@ export default function LoginPage() {
         router.push("/");
       } else {
         setError("メールアドレスまたはパスワードが正しくありません");
+      }
+    } catch {
+      setError("通信エラーが発生しました");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRegister(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "登録に失敗しました");
+        return;
+      }
+      const signInRes = await signIn("credentials", { email, password, redirect: false });
+      if (signInRes?.ok) {
+        router.push("/settings");
+      } else {
+        setError("登録しましたがログインに失敗しました");
       }
     } catch {
       setError("通信エラーが発生しました");
@@ -62,60 +97,127 @@ export default function LoginPage() {
       </div>
 
       <div className="w-full max-w-sm bg-white rounded-3xl shadow-sm border border-stone-100 p-6 space-y-4">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-stone-500 mb-1.5">メールアドレス</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="input"
-              placeholder="example@mail.com"
-              required
-              autoFocus
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-stone-500 mb-1.5">パスワード</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="input"
-              placeholder="••••••••"
-              required
-            />
-          </div>
-
-          {error && (
-            <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">
-              <p className="text-xs text-red-400">{error}</p>
-            </div>
-          )}
-
+        {/* タブ */}
+        <div className="flex rounded-2xl bg-stone-100 p-1">
           <button
-            type="submit"
-            disabled={loading}
-            className="btn-primary w-full py-3.5 text-sm mt-2"
+            type="button"
+            onClick={() => switchMode("login")}
+            className={`flex-1 py-2 text-sm font-medium rounded-xl transition-colors ${mode === "login" ? "bg-white text-stone-800 shadow-sm" : "text-stone-400"}`}
           >
-            {loading ? "ログイン中..." : "ログイン"}
+            ログイン
           </button>
-        </form>
-
-        <div className="relative flex items-center pt-2">
-          <div className="flex-1 border-t border-stone-100" />
-          <span className="px-3 text-xs text-stone-300">または</span>
-          <div className="flex-1 border-t border-stone-100" />
+          <button
+            type="button"
+            onClick={() => switchMode("register")}
+            className={`flex-1 py-2 text-sm font-medium rounded-xl transition-colors ${mode === "register" ? "bg-white text-stone-800 shadow-sm" : "text-stone-400"}`}
+          >
+            新規登録
+          </button>
         </div>
 
-        <button
-          type="button"
-          onClick={handleGuestLogin}
-          disabled={guestLoading}
-          className="w-full py-3.5 text-sm rounded-2xl border border-stone-200 text-stone-500 hover:bg-stone-50 transition-colors"
-        >
-          {guestLoading ? "ログイン中..." : "ゲストとして見る"}
-        </button>
+        {mode === "login" ? (
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-stone-500 mb-1.5">メールアドレス</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="input"
+                placeholder="example@mail.com"
+                required
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-stone-500 mb-1.5">パスワード</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="input"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+
+            {error && (
+              <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">
+                <p className="text-xs text-red-400">{error}</p>
+              </div>
+            )}
+
+            <button type="submit" disabled={loading} className="btn-primary w-full py-3.5 text-sm mt-2">
+              {loading ? "ログイン中..." : "ログイン"}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleRegister} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-stone-500 mb-1.5">お名前</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="input"
+                placeholder="おとうさん"
+                required
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-stone-500 mb-1.5">メールアドレス</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="input"
+                placeholder="example@mail.com"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-stone-500 mb-1.5">パスワード（6文字以上）</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="input"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+
+            {error && (
+              <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">
+                <p className="text-xs text-red-400">{error}</p>
+              </div>
+            )}
+
+            <button type="submit" disabled={loading} className="btn-primary w-full py-3.5 text-sm mt-2">
+              {loading ? "登録中..." : "アカウントを作成"}
+            </button>
+          </form>
+        )}
+
+        {mode === "login" && (
+          <>
+            <div className="relative flex items-center pt-2">
+              <div className="flex-1 border-t border-stone-100" />
+              <span className="px-3 text-xs text-stone-300">または</span>
+              <div className="flex-1 border-t border-stone-100" />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGuestLogin}
+              disabled={guestLoading}
+              className="w-full py-3.5 text-sm rounded-2xl border border-stone-200 text-stone-500 hover:bg-stone-50 transition-colors"
+            >
+              {guestLoading ? "ログイン中..." : "ゲストとして見る"}
+            </button>
+          </>
+        )}
       </div>
 
       <p className="text-xs text-stone-300 mt-8">たびと一緒に、毎日を大切に 🐾</p>

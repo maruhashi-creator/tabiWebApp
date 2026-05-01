@@ -93,19 +93,9 @@ Prismaに `CareLog` モデルを追加し `prisma db push` 済み。
 - **原因:** `/api/cat` への fetch に `.catch()` がなく、ネットワークエラー時にページがクラッシュしていた
 - **修正:** 全ページの `/api/cat` fetch に `.catch(() => {})` を追加
 
-### 各ページのローディング画面
+### 各ページのローディング
 
-ホームの🐱と同じパターンで全画面ローディングを追加。絵文字はページごとに異なる。
-
-| ページ | 絵文字 | 表示条件 |
-|---|---|---|
-| 記録（/record） | ✏️ | `cat` 未取得の間 |
-| グラフ（/graph） | 📈 | `loading` が true の間 |
-| カレンダー（/calendar） | 📅 | `loading` が true の間 |
-| 設定（/settings） | ⚙️ | `cat` 未取得の間 |
-
-- ごはん・トイレ・体重・お薬・ケアのタブ切り替えはローディングなし
-- `early return` パターンを使用し、インラインの「読み込み中...」テキストを削除
+データ取得中は `<div className="min-h-screen bg-[#F7F5F2]" />` で空白表示。絵文字などは使用していない。
 
 ---
 
@@ -119,6 +109,18 @@ Prismaに `CareLog` モデルを追加し `prisma db push` 済み。
 
 - 「その他」選択時のみ `placeholder` を「絵文字を入力 🥦 🍠 🐓 🐟️ など」に変更
 - その他の種類では「完食、残しあり など」のまま
+
+---
+
+### 新規ユーザー登録
+
+ログインページにタブ切り替え（ログイン / 新規登録）を追加。
+
+- `/api/register` POST: name / email / password を受け取りアカウント作成（bcrypt ハッシュ）
+- メール重複・6文字未満パスワードはエラー返却
+- 登録後は自動ログインし `/settings`（猫の登録フォーム）へ遷移
+- ゲストログインはログインタブのみ表示
+- メール認証なし（家族・知人限定の小規模利用のため）
 
 ---
 
@@ -137,14 +139,13 @@ Prismaに `CareLog` モデルを追加し `prisma db push` 済み。
 - 既存ユーザー（たびくんの家族）→ たびのデータのみ表示
 - 新規ユーザー（実家の父・母）→ 設定画面でむぎを登録 → むぎのデータのみ表示
 
-### ページ遷移アニメーション（フェードアウト・フェードイン）
+### ホームのみフェードアウト・フェードイン
 
-Next.js App Router の `app/template.tsx`（ページ遷移ごとに再マウントされる特殊ファイル）を使用。
+`app/template.tsx` を使用。ホームページ（`/`）のみに適用。他のページは素通り。
 
-- **フェードイン**: `template.tsx` がマウント時に opacity 0 → 1（250ms ease）
-- **フェードアウト**: BottomNav のボタンクリック時に `page-exit` カスタムイベントを発火 → `template.tsx` が opacity 1 → 0（150ms ease）→ 150ms後に `router.push()`
+- **フェードイン**: マウント時に opacity 0 → 1（250ms ease）
+- **フェードアウト**: BottomNav のボタンクリック時に `page-exit` イベントを発火 → opacity 1 → 0 → 250ms後に `router.push()`
 - BottomNav 自体は `layout.tsx` に属するため遷移中も固定表示のまま
-- `Link` コンポーネントから `button + useRouter` に変更し、フェードアウト後に遷移するよう制御
 
 ---
 
@@ -161,6 +162,7 @@ Next.js App Router の `app/template.tsx`（ページ遷移ごとに再マウン
 | `/api/medication` | GET / POST | 投薬ログ |
 | `/api/care` | GET / POST | ケアログ |
 | `/api/anomaly` | GET | 異常検知アラート |
+| `/api/register` | POST | 新規ユーザー登録 |
 
 `/api/feeding`, `/api/toilet`, `/api/care` はクエリパラメータ `from` / `to` による日付範囲絞り込みに対応。
 

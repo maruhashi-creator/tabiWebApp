@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { format, differenceInYears, differenceInMonths } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -10,7 +9,7 @@ import Link from "next/link";
 interface FeedingLog { id: string; amount: number; foodType: string | null; note: string | null; fedAt: string; user: { name: string } }
 interface ToiletLog { id: string; type: string; count: number; loggedAt: string; user: { name: string } }
 interface WeightLog { id: string; weight: number; measuredAt: string }
-interface Cat { id: string; name: string; breed: string | null; birthday: string | null }
+interface Cat { id: string; name: string; breed: string | null; birthday: string | null; photo: string | null }
 interface Anomaly { type: string; level: "warn" | "alert"; message: string }
 
 function catAge(birthday: string | null) {
@@ -125,7 +124,7 @@ export default function Dashboard() {
       <header className="bg-white border-b border-stone-100 sticky top-0 z-40">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
           <div>
-            <h1 className="text-sm font-bold text-stone-800 leading-tight">たびの健康手帳</h1>
+            <h1 className="text-sm font-bold text-stone-800 leading-tight">{cat?.name ?? "ねこ"}の健康手帳</h1>
             <p className="text-[10px] text-stone-400">{todayLabel}</p>
           </div>
           <div className="flex items-center gap-3">
@@ -145,8 +144,11 @@ export default function Dashboard() {
         {cat && (
           <div className="card p-5">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl overflow-hidden border border-stone-100 flex-shrink-0">
-                <Image src="/tabi-card.png" alt="たび" width={64} height={64} className="w-full h-full object-cover" />
+              <div className="w-16 h-16 rounded-2xl overflow-hidden border border-stone-100 flex-shrink-0 bg-stone-50 flex items-center justify-center">
+                {cat.photo
+                  ? <img src={cat.photo} alt={cat.name} className="w-full h-full object-cover" />
+                  : <span className="text-4xl">🐱</span>
+                }
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
@@ -179,7 +181,7 @@ export default function Dashboard() {
             <span className="text-2xl">🌟</span>
             <div>
               <p className="text-sm font-bold text-stone-700">今日も完璧！</p>
-              <p className="text-xs text-stone-400">たびのケアをありがとう 🐾</p>
+              <p className="text-xs text-stone-400">{cat?.name ?? "ねこ"}のケアをありがとう 🐾</p>
             </div>
           </div>
         )}

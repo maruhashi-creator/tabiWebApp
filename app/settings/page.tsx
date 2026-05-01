@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
 import { signOut, useSession } from "next-auth/react";
 
-interface Cat { id: string; name: string; breed: string | null; birthday: string | null }
+interface Cat { id: string; name: string; breed: string | null; birthday: string | null; photo: string | null }
 
 export default function SettingsPage() {
   const { data: session } = useSession();
@@ -13,9 +13,11 @@ export default function SettingsPage() {
   const [name, setName] = useState("");
   const [breed, setBreed] = useState("");
   const [birthday, setBirthday] = useState("");
+  const [photo, setPhoto] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch("/api/cat").then((r) => r.json()).then((cats) => {
@@ -25,9 +27,38 @@ export default function SettingsPage() {
         setName(c.name);
         setBreed(c.breed ?? "");
         setBirthday(c.birthday ? format(new Date(c.birthday), "yyyy-MM-dd") : "");
+        setPhoto(c.photo ?? null);
       }
     }).catch(() => {}).finally(() => setLoaded(true));
   }, []);
+
+  function compressImage(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const size = 400;
+        const canvas = document.createElement("canvas");
+        const scale = Math.min(size / img.width, size / img.height, 1);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.75));
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setError("5MB以下の画像を選択してください");
+      return;
+    }
+    const compressed = await compressImage(file);
+    setPhoto(compressed);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -40,8 +71,8 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
           isNew
-            ? { name, breed: breed || null, birthday: birthday || null }
-            : { id: cat!.id, name, breed: breed || null, birthday: birthday || null }
+            ? { name, breed: breed || null, birthday: birthday || null, photo }
+            : { id: cat!.id, name, breed: breed || null, birthday: birthday || null, photo }
         ),
       });
       if (res.ok) {
@@ -78,6 +109,29 @@ export default function SettingsPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="card p-5 space-y-4">
               <p className="text-xs font-semibold text-stone-400">{catLabel}</p>
+
+              {/* 写真 */}
+              <div className="flex flex-col items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-24 h-24 rounded-3xl overflow-hidden border-2 border-dashed border-stone-200 bg-stone-50 flex items-center justify-center active:scale-95 transition-transform"
+                >
+                  {photo
+                    ? <img src={photo} alt="cat" className="w-full h-full object-cover" />
+                    : <span className="text-5xl">🐱</span>
+                  }
+                </button>
+                <p className="text-xs text-stone-400">タップして写真を変更</p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handlePhotoChange}
+                />
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-stone-400 mb-1.5">名前</label>
                 <input

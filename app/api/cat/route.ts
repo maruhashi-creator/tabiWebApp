@@ -43,11 +43,12 @@ export async function PATCH(req: Request) {
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { id, name, breed, birthday } = body as {
+  const { id, name, breed, birthday, photo } = body as {
     id: string;
     name?: string;
     breed?: string;
     birthday?: string | null;
+    photo?: string | null;
   };
   if (!id) return Response.json({ error: "id is required" }, { status: 400 });
 
@@ -57,6 +58,7 @@ export async function PATCH(req: Request) {
       ...(name !== undefined && { name }),
       ...(breed !== undefined && { breed }),
       ...(birthday !== undefined && { birthday: birthday ? new Date(birthday) : null }),
+      ...(photo !== undefined && { photo }),
     },
   });
   return Response.json(cat);

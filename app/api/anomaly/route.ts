@@ -24,8 +24,6 @@ export async function GET(req: NextRequest) {
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const jstToday = new Date(now.getTime() + 9 * 60 * 60 * 1000);
   const todayDate = jstToday.toISOString().slice(0, 10);
-  const todayStart = new Date(`${todayDate}T00:00:00.000+09:00`);
-  const todayEnd = new Date(`${todayDate}T23:59:59.999+09:00`);
 
   const toJstDay = (date: Date) => new Date(date.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
@@ -50,11 +48,10 @@ export async function GET(req: NextRequest) {
     const prev = weights[1].weight;
     const changePct = Math.abs((latest - prev) / prev);
     if (changePct >= 0.1) {
-      const dir = latest > prev ? "増加" : "減少";
       anomalies.push({
         type: "weight",
         level: changePct >= 0.15 ? "alert" : "warn",
-        message: changePct >= 0.15 ? "体重が大きく変化しているかも" : "体重に変化があるかも",
+        message: "体重に変化があるかも",
       });
     }
   }
@@ -78,7 +75,7 @@ export async function GET(req: NextRequest) {
         type: "urine",
         level: todayUrine === 0 ? "alert" : "warn",
         message: todayUrine === 0
-          ? "今日おしっこの記録がないよ"
+          ? "まだおしっこの記録がないよ"
           : "おしっこの回数が少ないかも",
       });
     }
@@ -102,8 +99,8 @@ export async function GET(req: NextRequest) {
         type: "feeding",
         level: todayFed === 0 ? "alert" : "warn",
         message: todayFed === 0
-          ? "今日ごはんの記録がないよ"
-          : "食事量が平均より少ないかも",
+          ? "まだごはんの記録がないよ"
+          : "食餌量が平均より少ないかも",
       });
     }
   }

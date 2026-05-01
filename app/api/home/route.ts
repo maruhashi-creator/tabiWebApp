@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
       anomalies.push({
         type: "weight",
         level: changePct >= 0.15 ? "alert" : "warn",
-        message: changePct >= 0.15 ? "体重が大きく変化しているかも" : "体重に変化があるかも",
+        message: "体重に変化があるかも",
       });
     }
   }
@@ -92,7 +92,7 @@ export async function GET(req: NextRequest) {
       anomalies.push({
         type: "urine",
         level: todayUrine === 0 ? "alert" : "warn",
-        message: todayUrine === 0 ? "今日おしっこの記録がないよ" : "おしっこの回数が少ないかも",
+        message: todayUrine === 0 ? "まだおしっこの記録がないよ" : "おしっこの回数が少ないかも",
       });
     }
   }
@@ -112,7 +112,7 @@ export async function GET(req: NextRequest) {
       anomalies.push({
         type: "feeding",
         level: todayFed === 0 ? "alert" : "warn",
-        message: todayFed === 0 ? "今日ごはんの記録がないよ" : "食事量が平均より少ないかも",
+        message: todayFed === 0 ? "まだごはんの記録がないよ" : "食餌量が平均より少ないかも",
       });
     }
   }

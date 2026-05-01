@@ -306,31 +306,27 @@ function AlertCarousel({ anomalies }: { anomalies: Anomaly[] }) {
   const a = anomalies[index];
 
   return (
-    <div
-      className={`card p-4 flex items-center gap-3 border transition-opacity duration-700 ${
-        visible ? "opacity-100" : "opacity-0"
-      } ${a.level === "alert" ? "border-red-200 bg-red-50" : "border-amber-100 bg-amber-50"}`}
-    >
-      <span className="text-2xl flex-shrink-0">{a.level === "alert" ? "⚠️" : "🔔"}</span>
-      <div className="flex-1 min-w-0">
+    <div className={`card p-4 flex items-center gap-3 border ${a.level === "alert" ? "border-red-200 bg-red-50" : "border-amber-100 bg-amber-50"}`}>
+      <div className={`flex items-center gap-3 flex-1 min-w-0 transition-opacity duration-700 ${visible ? "opacity-100" : "opacity-0"}`}>
+        <span className="text-2xl flex-shrink-0">{a.level === "alert" ? "⚠️" : "🔔"}</span>
         <p className={`text-sm font-medium ${a.level === "alert" ? "text-red-600" : "text-amber-700"}`}>
           {a.message}
         </p>
-        {anomalies.length > 1 && (
-          <div className="flex gap-1 mt-1.5">
-            {anomalies.map((_, i) => (
-              <span
-                key={i}
-                className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                  i === index
-                    ? a.level === "alert" ? "bg-red-400" : "bg-amber-400"
-                    : "bg-stone-200"
-                }`}
-              />
-            ))}
-          </div>
-        )}
       </div>
+      {anomalies.length > 1 && (
+        <div className="flex gap-1 flex-shrink-0">
+          {anomalies.map((_, i) => (
+            <span
+              key={i}
+              className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                i === index
+                  ? a.level === "alert" ? "bg-red-400" : "bg-amber-400"
+                  : "bg-stone-200"
+              }`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

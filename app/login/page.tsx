@@ -7,8 +7,11 @@ import { useRouter } from "next/navigation";
 export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "register">("login");
+  const [regMethod, setRegMethod] = useState<"phone" | "email">("phone");
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
+  const [phone, setPhone] = useState("");
+  const [regEmail, setRegEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,16 +22,23 @@ export default function LoginPage() {
     setError("");
   }
 
+  function switchRegMethod(next: "phone" | "email") {
+    setRegMethod(next);
+    setPhone("");
+    setRegEmail("");
+    setError("");
+  }
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      const res = await signIn("credentials", { email, password, redirect: false });
+      const res = await signIn("credentials", { identifier, password, redirect: false });
       if (res?.ok) {
         router.push("/");
       } else {
-        setError("メールアドレスまたはパスワードが正しくありません");
+        setError("メールアドレス・携帯番号またはパスワードが正しくありません");
       }
     } catch {
       setError("通信エラーが発生しました");
@@ -41,18 +51,23 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
+    const loginIdentifier = regMethod === "phone" ? phone : regEmail;
     try {
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({
+          name,
+          ...(regMethod === "phone" ? { phone } : { email: regEmail }),
+          password,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? "登録に失敗しました");
         return;
       }
-      const signInRes = await signIn("credentials", { email, password, redirect: false });
+      const signInRes = await signIn("credentials", { identifier: loginIdentifier, password, redirect: false });
       if (signInRes?.ok) {
         router.push("/settings");
       } else {
@@ -70,7 +85,7 @@ export default function LoginPage() {
     setGuestLoading(true);
     try {
       const res = await signIn("credentials", {
-        email: "guest@tabi.app",
+        identifier: "guest@tabi.app",
         password: "guest",
         redirect: false,
       });
@@ -97,7 +112,7 @@ export default function LoginPage() {
       </div>
 
       <div className="w-full max-w-sm bg-white rounded-3xl shadow-sm border border-stone-100 p-6 space-y-4">
-        {/* タブ */}
+        {/* ログイン / 新規登録タブ */}
         <div className="flex rounded-2xl bg-stone-100 p-1">
           <button
             type="button"
@@ -118,13 +133,13 @@ export default function LoginPage() {
         {mode === "login" ? (
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-stone-500 mb-1.5">メールアドレス</label>
+              <label className="block text-xs font-medium text-stone-500 mb-1.5">メールアドレス / 携帯番号</label>
               <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="text"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
                 className="input"
-                placeholder="example@mail.com"
+                placeholder="example@mail.com または 09012345678"
                 required
                 autoFocus
               />
@@ -165,17 +180,46 @@ export default function LoginPage() {
                 autoFocus
               />
             </div>
+
+            {/* 携帯 / メール切り替え */}
             <div>
-              <label className="block text-xs font-medium text-stone-500 mb-1.5">メールアドレス</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="input"
-                placeholder="example@mail.com"
-                required
-              />
+              <div className="flex rounded-xl bg-stone-100 p-0.5 mb-2">
+                <button
+                  type="button"
+                  onClick={() => switchRegMethod("phone")}
+                  className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-colors ${regMethod === "phone" ? "bg-white text-stone-800 shadow-sm" : "text-stone-400"}`}
+                >
+                  携帯電話
+                </button>
+                <button
+                  type="button"
+                  onClick={() => switchRegMethod("email")}
+                  className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-colors ${regMethod === "email" ? "bg-white text-stone-800 shadow-sm" : "text-stone-400"}`}
+                >
+                  メールアドレス
+                </button>
+              </div>
+              {regMethod === "phone" ? (
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="input"
+                  placeholder="09012345678"
+                  required
+                />
+              ) : (
+                <input
+                  type="email"
+                  value={regEmail}
+                  onChange={(e) => setRegEmail(e.target.value)}
+                  className="input"
+                  placeholder="example@mail.com"
+                  required
+                />
+              )}
             </div>
+
             <div>
               <label className="block text-xs font-medium text-stone-500 mb-1.5">パスワード（6文字以上）</label>
               <input

@@ -18,6 +18,11 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
+  const [joinLoading, setJoinLoading] = useState(false);
+  const [joinResult, setJoinResult] = useState<{ ok: boolean; message: string } | null>(null);
 
   useEffect(() => {
     fetch("/api/cat").then((r) => r.json()).then((cats) => {
@@ -58,6 +63,45 @@ export default function SettingsPage() {
     }
     const compressed = await compressImage(file);
     setPhoto(compressed);
+  }
+
+  async function handleGenerateInvite() {
+    setInviteLoading(true);
+    try {
+      const res = await fetch("/api/invite", { method: "POST" });
+      const data = await res.json();
+      if (res.ok) setInviteCode(data.code);
+    } finally {
+      setInviteLoading(false);
+    }
+  }
+
+  async function handleJoin(e: React.FormEvent) {
+    e.preventDefault();
+    setJoinLoading(true);
+    setJoinResult(null);
+    try {
+      const res = await fetch("/api/invite/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: joinCode }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setJoinResult({ ok: true, message: `${data.catName}に参加しました！` });
+        setJoinCode("");
+        // 猫データを再取得
+        const cats = await fetch("/api/cat").then((r) => r.json());
+        const c = cats[0];
+        if (c) { setCat(c); setName(c.name); setBreed(c.breed ?? ""); setBirthday(c.birthday ? format(new Date(c.birthday), "yyyy-MM-dd") : ""); setPhoto(c.photo ?? null); }
+      } else {
+        setJoinResult({ ok: false, message: data.error ?? "参加に失敗しました" });
+      }
+    } catch {
+      setJoinResult({ ok: false, message: "通信エラーが発生しました" });
+    } finally {
+      setJoinLoading(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -163,6 +207,65 @@ export default function SettingsPage() {
               {saved ? "保存しました ✓" : saving ? "保存中..." : "保存する"}
             </button>
           </form>
+
+        {/* 招待コードを発行 */}
+        {cat && (
+          <div className="card p-5 space-y-3">
+            <p className="text-xs font-semibold text-stone-400">家族を招待</p>
+            <p className="text-xs text-stone-400">{cat.name}の世話を一緒にする人に招待コードを共有してください。コードは24時間有効です。</p>
+            {inviteCode ? (
+              <div className="bg-stone-50 rounded-2xl p-4 text-center">
+                <p className="text-2xl font-bold tracking-widest text-stone-800">{inviteCode}</p>
+                <p className="text-xs text-stone-400 mt-1">このコードを相手に伝えてください</p>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleGenerateInvite}
+                disabled={inviteLoading}
+                className="btn-primary w-full py-3 text-sm"
+              >
+                {inviteLoading ? "発行中..." : "招待コードを発行する"}
+              </button>
+            )}
+            {inviteCode && (
+              <button
+                type="button"
+                onClick={() => setInviteCode(null)}
+                className="w-full text-xs text-stone-400 py-1"
+              >
+                閉じる
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* 招待コードで参加 */}
+        <div className="card p-5 space-y-3">
+          <p className="text-xs font-semibold text-stone-400">招待コードで参加</p>
+          <form onSubmit={handleJoin} className="flex gap-2">
+            <input
+              type="text"
+              value={joinCode}
+              onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+              placeholder="A3B9F2"
+              maxLength={6}
+              className="input flex-1 text-center tracking-widest font-bold uppercase"
+            />
+            <button
+              type="submit"
+              disabled={joinLoading || joinCode.length !== 6}
+              className="btn-primary px-4 py-2 text-sm shrink-0"
+            >
+              {joinLoading ? "..." : "参加"}
+            </button>
+          </form>
+          {joinResult && (
+            <p className={`text-xs px-1 ${joinResult.ok ? "text-emerald-500" : "text-red-400"}`}>
+              {joinResult.message}
+            </p>
+          )}
+        </div>
 
         {/* ログインユーザー */}
         <div className="card p-5 space-y-3">

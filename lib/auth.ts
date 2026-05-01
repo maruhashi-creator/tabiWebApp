@@ -8,21 +8,22 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "credentials",
       credentials: {
-        email: { label: "メールアドレス", type: "email" },
+        identifier: { label: "メールアドレス / 携帯番号", type: "text" },
         password: { label: "パスワード", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        if (!credentials?.identifier || !credentials?.password) return null;
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
+        const id = credentials.identifier;
+        const user = await prisma.user.findFirst({
+          where: { OR: [{ email: id }, { phone: id }] },
         });
         if (!user) return null;
 
         const valid = await bcrypt.compare(credentials.password, user.password);
         if (!valid) return null;
 
-        return { id: user.id, email: user.email, name: user.name };
+        return { id: user.id, email: user.email ?? user.phone ?? "", name: user.name };
       },
     }),
   ],

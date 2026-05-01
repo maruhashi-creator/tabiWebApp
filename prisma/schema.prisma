@@ -9,7 +9,8 @@ datasource db {
 
 model User {
   id              String          @id @default(cuid())
-  email           String          @unique
+  email           String?         @unique
+  phone           String?         @unique
   password        String
   name            String
   createdAt       DateTime        @default(now())
@@ -20,6 +21,22 @@ model User {
   weightLogs      WeightLog[]
   medicationLogs  MedicationLog[]
   careLogs        CareLog[]
+  invitesCreated  InviteCode[]    @relation("InviteCreated")
+  invitesUsed     InviteCode[]    @relation("InviteUsed")
+}
+
+model InviteCode {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  catId       String
+  createdById String
+  expiresAt   DateTime
+  usedAt      DateTime?
+  usedById    String?
+  cat         Cat       @relation(fields: [catId], references: [id], onDelete: Cascade)
+  createdBy   User      @relation("InviteCreated", fields: [createdById], references: [id])
+  usedBy      User?     @relation("InviteUsed", fields: [usedById], references: [id])
+  createdAt   DateTime  @default(now())
 }
 
 model Cat {
@@ -31,6 +48,7 @@ model Cat {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   users           User[]
+  inviteCodes     InviteCode[]
   feedingLogs     FeedingLog[]
   toiletLogs      ToiletLog[]
   weightLogs      WeightLog[]

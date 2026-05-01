@@ -112,7 +112,7 @@ export default function FeedingPage() {
           <div className="text-6xl animate-bounce">{ft?.emoji ?? "🥣"}</div>
           <p className="text-lg font-bold text-stone-700">記録したよ！</p>
           <p className="text-sm text-stone-400 leading-relaxed">
-            たびの{foodType}、ちゃんと食べてくれたかな？<br />
+            {cat?.name ?? "ねこ"}の{foodType}、ちゃんと食べてくれたかな？<br />
             毎日の積み重ねが大切だよ 🐾
           </p>
         </div>
@@ -128,8 +128,8 @@ export default function FeedingPage() {
             ← 戻る
           </button>
           <div>
-            <h1 className="text-base font-bold text-stone-800">たびのごはん</h1>
-            <p className="text-[10px] text-stone-400">{message}</p>
+            <h1 className="text-base font-bold text-stone-800">{(cat?.name ?? "ねこ")}のごはん</h1>
+            <p className="text-[10px] text-stone-400">{message.replaceAll("たび", cat?.name ?? "たび")}</p>
           </div>
         </div>
       </header>

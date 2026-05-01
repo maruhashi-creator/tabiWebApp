@@ -95,7 +95,7 @@ export default function ToiletPage() {
           <p className="text-lg font-bold text-stone-700">記録したよ！</p>
           <p className="text-sm text-stone-400 leading-relaxed whitespace-pre-line">
             {type === "URINE"
-              ? "おしっこ、ちゃんとできたんだね。\nたびは元気そうだね 🐱"
+              ? `おしっこ、ちゃんとできたんだね。\n${cat?.name ?? "ねこ"}は元気そうだね 🐱`
               : "うんち、できてよかった！\n健康のバロメーターだよ 🐾"}
           </p>
         </div>
@@ -111,8 +111,8 @@ export default function ToiletPage() {
             ← 戻る
           </button>
           <div>
-            <h1 className="text-base font-bold text-stone-800">たびのトイレ</h1>
-            <p className="text-[10px] text-stone-400">{message}</p>
+            <h1 className="text-base font-bold text-stone-800">{(cat?.name ?? "ねこ")}のトイレ</h1>
+            <p className="text-[10px] text-stone-400">{message.replaceAll("たび", cat?.name ?? "たび")}</p>
           </div>
         </div>
       </header>
@@ -123,7 +123,7 @@ export default function ToiletPage() {
           <div className="card p-5 space-y-3">
             <label className="block text-xs font-semibold text-stone-400 text-center">種類</label>
             <div className="grid grid-cols-2 gap-3">
-              {([["URINE", "💧", "おしっこ"], ["FECES", "🌼", "うんち"]] as const).map(([t, emoji, label]) => (
+              {([["URINE", "💧"], ["FECES", "🌼"]] as const).map(([t, emoji]) => (
                 <button
                   key={t}
                   type="button"

@@ -102,7 +102,7 @@ export default function MedicationPage() {
           <p className="text-lg font-bold text-stone-700">記録したよ！</p>
           <p className="text-sm text-stone-400 leading-relaxed">
             お薬、ちゃんと飲んでくれたんだね。<br />
-            たびのために続けてくれてありがとう 🐾
+            {cat?.name ?? "ねこ"}のために続けてくれてありがとう 🐾
           </p>
         </div>
       </div>
@@ -117,8 +117,8 @@ export default function MedicationPage() {
             ← 戻る
           </button>
           <div>
-            <h1 className="text-base font-bold text-stone-800">たびのお薬</h1>
-            <p className="text-[10px] text-stone-400">{message}</p>
+            <h1 className="text-base font-bold text-stone-800">{(cat?.name ?? "ねこ")}のお薬</h1>
+            <p className="text-[10px] text-stone-400">{message.replaceAll("たび", cat?.name ?? "たび")}</p>
           </div>
         </div>
       </header>

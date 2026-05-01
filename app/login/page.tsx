@@ -220,7 +220,7 @@ export default function LoginPage() {
         )}
       </div>
 
-      <p className="text-xs text-stone-300 mt-8">たびと一緒に、毎日を大切に 🐾</p>
+      <p className="text-xs text-stone-300 mt-8">愛するねこと一緒に、毎日を大切に 🐾</p>
     </div>
   );
 }

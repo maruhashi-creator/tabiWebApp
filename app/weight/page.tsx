@@ -94,7 +94,7 @@ export default function WeightPage() {
           <div className="text-6xl animate-bounce">⚖️</div>
           <p className="text-lg font-bold text-stone-700">記録したよ！</p>
           <p className="text-sm text-stone-400 leading-relaxed">
-            たびの体重、ちゃんと把握できてるね。<br />
+            {cat?.name ?? "ねこ"}の体重、ちゃんと把握できてるね。<br />
             変化に気づいてあげられるのは<br />
             毎日見てるからだよ 🐾
           </p>
@@ -111,8 +111,8 @@ export default function WeightPage() {
             ← 戻る
           </button>
           <div>
-            <h1 className="text-base font-bold text-stone-800">たびの体重</h1>
-            <p className="text-[10px] text-stone-400">{message}</p>
+            <h1 className="text-base font-bold text-stone-800">{(cat?.name ?? "ねこ")}の体重</h1>
+            <p className="text-[10px] text-stone-400">{message.replaceAll("たび", cat?.name ?? "たび")}</p>
           </div>
         </div>
       </header>

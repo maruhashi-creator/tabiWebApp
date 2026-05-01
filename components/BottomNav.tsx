@@ -14,6 +14,8 @@ export function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
 
+  if (pathname === "/login") return null;
+
   const handleNavigate = (href: string) => {
     if (pathname === href) return;
     window.dispatchEvent(new Event("page-exit"));

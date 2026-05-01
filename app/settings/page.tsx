@@ -9,6 +9,7 @@ interface Cat { id: string; name: string; breed: string | null; birthday: string
 export default function SettingsPage() {
   const { data: session } = useSession();
   const [cat, setCat] = useState<Cat | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [name, setName] = useState("");
   const [breed, setBreed] = useState("");
   const [birthday, setBirthday] = useState("");
@@ -19,31 +20,33 @@ export default function SettingsPage() {
   useEffect(() => {
     fetch("/api/cat").then((r) => r.json()).then((cats) => {
       const c: Cat = cats[0];
-      if (!c) return;
-      setCat(c);
-      setName(c.name);
-      setBreed(c.breed ?? "");
-      setBirthday(c.birthday ? format(new Date(c.birthday), "yyyy-MM-dd") : "");
-    }).catch(() => {});
+      if (c) {
+        setCat(c);
+        setName(c.name);
+        setBreed(c.breed ?? "");
+        setBirthday(c.birthday ? format(new Date(c.birthday), "yyyy-MM-dd") : "");
+      }
+    }).catch(() => {}).finally(() => setLoaded(true));
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!cat) return;
     setSaving(true);
     setError("");
     try {
+      const isNew = !cat;
       const res = await fetch("/api/cat", {
-        method: "PATCH",
+        method: isNew ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: cat.id,
-          name,
-          breed: breed || null,
-          birthday: birthday || null,
-        }),
+        body: JSON.stringify(
+          isNew
+            ? { name, breed: breed || null, birthday: birthday || null }
+            : { id: cat!.id, name, breed: breed || null, birthday: birthday || null }
+        ),
       });
       if (res.ok) {
+        const updated = await res.json();
+        setCat(updated);
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
       } else {
@@ -57,21 +60,24 @@ export default function SettingsPage() {
     }
   }
 
-  if (!cat) return <div className="min-h-screen bg-[#F7F5F2]" />;
+  if (!loaded) return <div className="min-h-screen bg-[#F7F5F2]" />;
+
+  const catLabel = cat ? `${cat.name}のプロフィール` : "ねこのプロフィールを登録";
+  const subLabel = cat ? `${cat.name}のプロフィールを編集` : "ねこの名前を入力してください";
 
   return (
     <div className="min-h-screen bg-[#F7F5F2] pb-24">
       <header className="bg-white border-b border-stone-100 sticky top-0 z-40">
         <div className="max-w-lg mx-auto px-4 py-3">
           <h1 className="text-base font-bold text-stone-800">設定</h1>
-          <p className="text-[10px] text-stone-400">たびのプロフィールを編集</p>
+          <p className="text-[10px] text-stone-400">{subLabel}</p>
         </div>
       </header>
 
       <main className="max-w-lg mx-auto px-4 pt-5 space-y-4">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="card p-5 space-y-4">
-              <p className="text-xs font-semibold text-stone-400">たびのプロフィール</p>
+              <p className="text-xs font-semibold text-stone-400">{catLabel}</p>
               <div>
                 <label className="block text-xs font-semibold text-stone-400 mb-1.5">名前</label>
                 <input

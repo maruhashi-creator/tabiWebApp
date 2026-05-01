@@ -14,6 +14,7 @@ model User {
   name            String
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
+  cats            Cat[]
   feedingLogs     FeedingLog[]
   toiletLogs      ToiletLog[]
   weightLogs      WeightLog[]
@@ -28,6 +29,7 @@ model Cat {
   breed           String?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
+  users           User[]
   feedingLogs     FeedingLog[]
   toiletLogs      ToiletLog[]
   weightLogs      WeightLog[]

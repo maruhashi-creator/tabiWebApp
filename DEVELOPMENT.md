@@ -120,6 +120,23 @@ Prismaに `CareLog` モデルを追加し `prisma db push` 済み。
 - 「その他」選択時のみ `placeholder` を「絵文字を入力 🥦 🍠 🐓 🐟️ など」に変更
 - その他の種類では「完食、残しあり など」のまま
 
+---
+
+### マルチユーザー対応（Cat-User 多対多）
+
+複数ユーザーが異なる猫のデータを管理できるよう、`Cat` と `User` の間に多対多リレーションを追加。
+
+- **スキーマ変更:** `prisma/schema.prisma` に `Cat.users User[]` / `User.cats Cat[]` を追加し、`prisma db push` 済み
+- **既存データ移行:** seed 実行により既存3ユーザー（おとうさん・おかあさん・ゲスト）をたびに connect
+- **`/api/cat` GET:** `users: { some: { id: session.user.id } }` でログインユーザーの猫のみ返す
+- **`/api/cat` POST:** 新規猫作成エンドポイントを追加。作成時にログインユーザーを connect
+- **`/api/home` GET:** `cat.findFirst` をユーザーフィルタ付きに変更
+- **`/settings` ページ:** 猫が未登録の新規ユーザーは猫作成フォームとして動作（POST）。登録済みは従来通り編集（PATCH）
+
+**ユーザー分離のしくみ:**
+- 既存ユーザー（たびくんの家族）→ たびのデータのみ表示
+- 新規ユーザー（実家の父・母）→ 設定画面でむぎを登録 → むぎのデータのみ表示
+
 ### ページ遷移アニメーション（フェードアウト・フェードイン）
 
 Next.js App Router の `app/template.tsx`（ページ遷移ごとに再マウントされる特殊ファイル）を使用。
@@ -135,7 +152,8 @@ Next.js App Router の `app/template.tsx`（ページ遷移ごとに再マウン
 
 | エンドポイント | メソッド | 概要 |
 |---|---|---|
-| `/api/cat` | GET | 猫一覧取得 |
+| `/api/cat` | GET | ログインユーザーの猫一覧取得 |
+| `/api/cat` | POST | 猫新規作成（ログインユーザーに紐付け） |
 | `/api/cat` | PATCH | プロフィール更新 |
 | `/api/feeding` | GET / POST | 給餌ログ |
 | `/api/toilet` | GET / POST | トイレログ |

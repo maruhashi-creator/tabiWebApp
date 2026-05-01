@@ -8,8 +8,34 @@ export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const cats = await prisma.cat.findMany({ orderBy: { name: "asc" } });
+  const cats = await prisma.cat.findMany({
+    where: { users: { some: { id: session.user.id } } },
+    orderBy: { name: "asc" },
+  });
   return Response.json(cats);
+}
+
+export async function POST(req: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const body = await req.json();
+  const { name, breed, birthday } = body as {
+    name: string;
+    breed?: string;
+    birthday?: string | null;
+  };
+  if (!name) return Response.json({ error: "name is required" }, { status: 400 });
+
+  const cat = await prisma.cat.create({
+    data: {
+      name,
+      ...(breed && { breed }),
+      ...(birthday && { birthday: new Date(birthday) }),
+      users: { connect: { id: session.user.id } },
+    },
+  });
+  return Response.json(cat, { status: 201 });
 }
 
 export async function PATCH(req: Request) {

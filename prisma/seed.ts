@@ -25,11 +25,19 @@ async function main() {
     create: { email: "guest@tabi.app", password: guestHashed, name: "ゲスト" },
   });
 
-  await prisma.cat.upsert({
+  const tabi = await prisma.cat.upsert({
     where: { id: "tabi" },
     update: {},
     create: { id: "tabi", name: "たび", breed: "雑種" },
   });
+
+  // Link all existing users to tabi
+  for (const email of ["kazuyamaruhashi@gmail.com", "route3973@gmail.com", "guest@tabi.app"]) {
+    await prisma.user.update({
+      where: { email },
+      data: { cats: { connect: { id: tabi.id } } },
+    });
+  }
 
   console.log("Seed完了");
 }

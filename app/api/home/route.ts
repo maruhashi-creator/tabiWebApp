@@ -23,7 +23,10 @@ export async function GET(req: NextRequest) {
   const date = searchParams.get("date");
   if (!date) return Response.json({ error: "date is required" }, { status: 400 });
 
-  const cat = await prisma.cat.findFirst({ orderBy: { name: "asc" } });
+  const cat = await prisma.cat.findFirst({
+    where: { users: { some: { id: session.user.id } } },
+    orderBy: { name: "asc" },
+  });
   if (!cat) return Response.json({ error: "cat not found" }, { status: 404 });
 
   const todayStart = new Date(`${date}T00:00:00.000+09:00`);

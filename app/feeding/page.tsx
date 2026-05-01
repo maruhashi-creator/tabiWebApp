@@ -216,7 +216,7 @@ export default function FeedingPage() {
                 type="text"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="完食、残しあり、嬉しそうだった など"
+                placeholder={foodType === "その他" ? "絵文字を入力 🥦 🍠 🐓 🐟️ など" : "完食、残しあり、嬉しそうだった など"}
                 className="input"
               />
             </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { format } from "date-fns";
 import { signOut, useSession } from "next-auth/react";
 
@@ -162,7 +163,7 @@ export default function SettingsPage() {
                   className="w-24 h-24 rounded-3xl overflow-hidden border-2 border-dashed border-stone-200 bg-stone-50 flex items-center justify-center active:scale-95 transition-transform"
                 >
                   {photo
-                    ? <img src={photo} alt="cat" className="w-full h-full object-cover" />
+                    ? <Image src={photo} alt="cat" width={96} height={96} className="w-full h-full object-cover" unoptimized />
                     : <span className="text-5xl">🐱</span>
                   }
                 </button>

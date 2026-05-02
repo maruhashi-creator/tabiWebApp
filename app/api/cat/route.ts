@@ -53,7 +53,7 @@ export async function PATCH(req: Request) {
   if (!id) return Response.json({ error: "id is required" }, { status: 400 });
 
   const cat = await prisma.cat.update({
-    where: { id },
+    where: { id, users: { some: { id: session.user.id } } },
     data: {
       ...(name !== undefined && { name }),
       ...(breed !== undefined && { breed }),

@@ -5,6 +5,7 @@ import { useSession, signOut } from "next-auth/react";
 import { format, differenceInYears, differenceInMonths } from "date-fns";
 import { ja } from "date-fns/locale";
 import Link from "next/link";
+import Image from "next/image";
 
 interface FeedingLog { id: string; amount: number; foodType: string | null; note: string | null; fedAt: string; user: { name: string } }
 interface ToiletLog { id: string; type: string; count: number; loggedAt: string; user: { name: string } }
@@ -146,7 +147,7 @@ export default function Dashboard() {
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-2xl overflow-hidden border border-stone-100 flex-shrink-0 bg-stone-50 flex items-center justify-center">
                 {cat.photo
-                  ? <img src={cat.photo} alt={cat.name} className="w-full h-full object-cover" />
+                  ? <Image src={cat.photo} alt={cat.name} width={64} height={64} className="w-full h-full object-cover" unoptimized />
                   : <span className="text-4xl">🐱</span>
                 }
               </div>

@@ -75,6 +75,6 @@ export async function DELETE(req: NextRequest) {
   const id = searchParams.get("id");
   if (!id) return Response.json({ error: "id is required" }, { status: 400 });
 
-  await prisma.feedingLog.delete({ where: { id } });
+  await prisma.feedingLog.delete({ where: { id, userId: session.user.id } });
   return Response.json({ ok: true });
 }

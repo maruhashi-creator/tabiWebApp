@@ -17,20 +17,24 @@ export const metadata: Metadata = {
     userScalable: false,
   },
   icons: {
-    apple: "/icon.png",
-    icon: "/icon.png",
+    apple: "/apple-touch-icon.png",
+    icon: "/favicon.png",
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "たびの健康手帳",
   },
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ja">
-      <head>
+      <body className={inter.className}>
+        <Providers>{children}</Providers>
+        <BottomNav />
+        <SpeedInsights />
         <script dangerouslySetInnerHTML={{ __html: `
           document.addEventListener('touchmove', function(e) {
             if (e.touches.length > 1) e.preventDefault();
@@ -42,11 +46,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             }
           });
         `}} />
-      </head>
-      <body className={inter.className}>
-        <Providers>{children}</Providers>
-        <BottomNav />
-        <SpeedInsights />
       </body>
     </html>
   );

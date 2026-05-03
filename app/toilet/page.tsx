@@ -89,7 +89,7 @@ export default function ToiletPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-[#F7F5F2] flex items-center justify-center">
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
         <div className="text-center space-y-4 px-8">
           <div className="text-6xl animate-bounce">{type === "URINE" ? "💧" : "🌼"}</div>
           <p className="text-lg font-bold text-stone-700">記録したよ！</p>
@@ -104,7 +104,7 @@ export default function ToiletPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F5F2] pb-24">
+    <div className="min-h-screen bg-canvas pb-24">
       <header className="bg-white border-b border-stone-100 sticky top-0 z-40">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">
           <button onClick={() => router.back()} className="text-stone-400 hover:text-stone-600 text-sm transition-colors">
@@ -130,7 +130,7 @@ export default function ToiletPage() {
                   onClick={() => setType(t)}
                   className={`py-6 rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-95 border-2 ${
                     type === t
-                      ? "border-[#F69F9A] bg-stone-50"
+                      ? "border-primary bg-stone-50"
                       : "border-stone-100 bg-white hover:border-stone-200"
                   }`}
                 >

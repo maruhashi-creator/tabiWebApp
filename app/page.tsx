@@ -105,7 +105,7 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F7F5F2]">
+      <div className="min-h-screen flex items-center justify-center bg-canvas">
         <div className="text-center space-y-3">
           <div className="text-5xl animate-bounce">🐱</div>
           <p className="text-sm text-stone-400">読み込み中...</p>
@@ -115,7 +115,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F5F2] pb-24">
+    <div className="min-h-screen bg-canvas pb-24">
       {(pullY > 0 || refreshing) && (
         <div className="fixed top-0 left-0 right-0 flex justify-center z-50 pointer-events-none"
           style={{ paddingTop: refreshing ? 12 : Math.max(0, pullY - 20) }}>
@@ -277,7 +277,7 @@ function StatusCard({ emoji, label, value, done }: { emoji: string; label: strin
       <p className="text-2xl mb-1.5">{emoji}</p>
       {label && <p className="text-[10px] text-stone-400 mb-1">{label}</p>}
       <p className={`text-xs font-bold ${done ? "text-stone-700" : "text-stone-300"}`}>{value}</p>
-      {done && <div className="w-1.5 h-1.5 bg-[#F69F9A] rounded-full mx-auto mt-1.5" />}
+      {done && <div className="w-1.5 h-1.5 bg-primary rounded-full mx-auto mt-1.5" />}
     </div>
   );
 }
@@ -339,7 +339,7 @@ function QuickButton({ href, emoji, label, done }: { href: string; emoji: string
       className="relative card p-4 text-center active:scale-95 transform transition-transform block"
     >
       {done && (
-        <span className="absolute top-2 right-2 text-[#F69F9A] text-xs">✓</span>
+        <span className="absolute top-2 right-2 text-primary text-xs">✓</span>
       )}
       <p className="text-2xl mb-1">{emoji}</p>
       <p className="text-xs font-semibold text-stone-600">{label}</p>

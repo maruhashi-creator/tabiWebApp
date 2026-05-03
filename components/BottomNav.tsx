@@ -32,11 +32,11 @@ export function BottomNav() {
               key={item.href}
               onClick={() => handleNavigate(item.href)}
               className={`flex-1 flex flex-col items-center py-2 pt-3 gap-0.5 transition-colors ${
-                active ? "text-[#F69F9A]" : "text-stone-400 hover:text-stone-600"
+                active ? "text-primary" : "text-stone-400 hover:text-stone-600"
               }`}
             >
               <span className="text-xl">{item.emoji}</span>
-              <span className={`text-[10px] font-medium ${active ? "text-[#F69F9A]" : ""}`}>
+              <span className={`text-[10px] font-medium ${active ? "text-primary" : ""}`}>
                 {item.label}
               </span>
             </button>

@@ -136,13 +136,13 @@ export default function SettingsPage() {
     }
   }
 
-  if (!loaded) return <div className="min-h-screen bg-[#F7F5F2]" />;
+  if (!loaded) return <div className="min-h-screen bg-canvas" />;
 
   const catLabel = cat ? `${cat.name}のプロフィール` : "ねこのプロフィールを登録";
   const subLabel = cat ? `${cat.name}のプロフィールを編集` : "ねこの名前を入力してください";
 
   return (
-    <div className="min-h-screen bg-[#F7F5F2] pb-24">
+    <div className="min-h-screen bg-canvas pb-24">
       <header className="bg-white border-b border-stone-100 sticky top-0 z-40">
         <div className="max-w-lg mx-auto px-4 py-3">
           <h1 className="text-base font-bold text-stone-800">設定</h1>

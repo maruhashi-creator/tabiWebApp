@@ -96,7 +96,7 @@ export default function MedicationPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-[#F7F5F2] flex items-center justify-center">
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
         <div className="text-center space-y-4 px-8">
           <div className="text-6xl animate-bounce">💊</div>
           <p className="text-lg font-bold text-stone-700">記録したよ！</p>
@@ -110,7 +110,7 @@ export default function MedicationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F5F2] pb-24">
+    <div className="min-h-screen bg-canvas pb-24">
       <header className="bg-white border-b border-stone-100 sticky top-0 z-40">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">
           <button onClick={() => router.back()} className="text-stone-400 hover:text-stone-600 text-sm transition-colors">

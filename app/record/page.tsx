@@ -22,10 +22,10 @@ export default function RecordPage() {
     fetch("/api/cat").then((r) => r.json()).then((cats) => setCat(cats[0] ?? null)).catch(() => {});
   }, []);
 
-  if (!cat) return <div className="min-h-screen bg-[#F7F5F2]" />;
+  if (!cat) return <div className="min-h-screen bg-canvas" />;
 
   return (
-    <div className="min-h-screen bg-[#F7F5F2] pb-24">
+    <div className="min-h-screen bg-canvas pb-24">
       <header className="bg-white border-b border-stone-100 sticky top-0 z-40">
         <div className="max-w-lg mx-auto px-4 py-3">
           <h1 className="text-base font-bold text-stone-800">記録する</h1>
@@ -41,7 +41,7 @@ export default function RecordPage() {
               onClick={() => setTab(t.key)}
               className={`flex-1 flex flex-col items-center py-2.5 gap-0.5 transition-colors text-[11px] font-medium border-b-2 ${
                 tab === t.key
-                  ? "text-[#F69F9A] border-[#F69F9A]"
+                  ? "text-primary border-primary"
                   : "text-stone-400 border-transparent"
               }`}
             >
@@ -133,11 +133,11 @@ function FeedingForm({ cat }: { cat: Cat }) {
               type="button"
               onClick={() => setFoodType(ft.key)}
               className={`py-3 rounded-xl flex flex-col items-center gap-1 transition-all active:scale-95 border-2 ${
-                foodType === ft.key ? "border-[#F69F9A] bg-stone-50" : "border-stone-100 bg-white"
+                foodType === ft.key ? "border-primary bg-stone-50" : "border-stone-100 bg-white"
               }`}
             >
               <span className="text-2xl">{ft.emoji}</span>
-              <span className={`text-[10px] font-semibold ${foodType === ft.key ? "text-[#F69F9A]" : "text-stone-400"}`}>{ft.key}</span>
+              <span className={`text-[10px] font-semibold ${foodType === ft.key ? "text-primary" : "text-stone-400"}`}>{ft.key}</span>
             </button>
           ))}
         </div>
@@ -158,7 +158,7 @@ function FeedingForm({ cat }: { cat: Cat }) {
           {getPresets(foodType).map((g) => (
             <button key={g} type="button" onClick={() => setAmount(String(g))}
               className={`py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-95 border ${
-                amount === String(g) ? "bg-[#F69F9A] text-white border-[#F69F9A]" : "bg-white text-stone-600 border-stone-200"
+                amount === String(g) ? "bg-primary text-white border-primary" : "bg-white text-stone-600 border-stone-200"
               }`}
             >{g}{foodType === "ミルク" ? "ml" : "g"}</button>
           ))}
@@ -230,7 +230,7 @@ function ToiletForm({ cat }: { cat: Cat }) {
           {([["URINE", "💧", "おしっこ"], ["FECES", "🌼", "うんち"]] as const).map(([t, emoji]) => (
             <button key={t} type="button" onClick={() => setType(t)}
               className={`py-6 rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-95 border-2 ${
-                type === t ? "border-[#F69F9A] bg-stone-50" : "border-stone-100 bg-white"
+                type === t ? "border-primary bg-stone-50" : "border-stone-100 bg-white"
               }`}
             >
               <span className="text-4xl">{emoji}</span>

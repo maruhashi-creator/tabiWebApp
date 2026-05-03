@@ -81,7 +81,7 @@ export default function CalendarPage() {
     });
   }, [cat, month]);
 
-  if (loading) return <div className="min-h-screen bg-[#F7F5F2]" />;
+  if (loading) return <div className="min-h-screen bg-canvas" />;
 
   const days = eachDayOfInterval({ start: startOfMonth(month), end: endOfMonth(month) });
   const startDow = getDay(startOfMonth(month));
@@ -89,7 +89,7 @@ export default function CalendarPage() {
   while (cells.length % 7 !== 0) cells.push(null);
 
   return (
-    <div className="min-h-screen bg-[#F7F5F2] pb-24">
+    <div className="min-h-screen bg-canvas pb-24">
       <header className="bg-white border-b border-stone-100 sticky top-0 z-40">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
           <div>
@@ -116,7 +116,7 @@ export default function CalendarPage() {
         {/* 凡例 */}
         <div className="flex gap-3 px-1 mb-3">
           {[
-            { color: "bg-[#F69F9A]", label: "ごはん" },
+            { color: "bg-primary", label: "ごはん" },
             { color: "bg-sky-300", label: "トイレ" },
             { color: "bg-emerald-300", label: "体重" },
             { color: "bg-violet-300", label: "お薬" },
@@ -157,7 +157,7 @@ export default function CalendarPage() {
                     } ${hasAny ? "active:bg-stone-50" : ""}`}
                   >
                     <span className={`text-[11px] font-medium leading-none mb-1.5 ${
-                      today ? "text-[#F69F9A] font-bold" :
+                      today ? "text-primary font-bold" :
                       dow === 0 ? "text-red-400" :
                       dow === 6 ? "text-sky-400" :
                       "text-stone-600"
@@ -165,7 +165,7 @@ export default function CalendarPage() {
                       {format(day, "d")}
                     </span>
                     <div className="flex flex-wrap gap-0.5">
-                      {rec?.feeding && <span className="w-1.5 h-1.5 rounded-full bg-[#F69F9A]" />}
+                      {rec?.feeding && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
                       {rec?.toilet && <span className="w-1.5 h-1.5 rounded-full bg-sky-300" />}
                       {rec?.weight && <span className="w-1.5 h-1.5 rounded-full bg-emerald-300" />}
                       {rec?.medication && <span className="w-1.5 h-1.5 rounded-full bg-violet-300" />}

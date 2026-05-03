@@ -4,8 +4,7 @@
 
 @layer base {
   body {
-    background-color: #F7F5F2;
-    color: #1C1917;
+    @apply bg-canvas text-ink;
   }
 }
 
@@ -15,11 +14,11 @@
   }
 
   .btn-primary {
-    @apply bg-[#F69F9A] hover:bg-[#E08880] active:bg-[#D07870] text-white font-semibold rounded-xl transition-colors disabled:opacity-40;
+    @apply bg-primary hover:bg-primary-hover active:bg-primary-active text-white font-semibold rounded-xl transition-colors disabled:opacity-40;
   }
 
   .btn-accent {
-    @apply bg-[#F69F9A] hover:bg-[#E08880] active:bg-[#D07870] text-white font-semibold rounded-xl transition-colors disabled:opacity-40;
+    @apply bg-primary hover:bg-primary-hover active:bg-primary-active text-white font-semibold rounded-xl transition-colors disabled:opacity-40;
   }
 
   .input {

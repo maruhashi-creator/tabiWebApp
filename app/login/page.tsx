@@ -102,7 +102,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F5F2] flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen bg-canvas flex flex-col items-center justify-center p-6">
       <div className="text-center mb-10">
         <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center shadow-sm border border-stone-100 mb-5 mx-auto">
           <span className="text-5xl">🐱</span>

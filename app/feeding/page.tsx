@@ -107,7 +107,7 @@ export default function FeedingPage() {
   if (success) {
     const ft = FOOD_TYPES.find((f) => f.key === foodType);
     return (
-      <div className="min-h-screen bg-[#F7F5F2] flex items-center justify-center">
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
         <div className="text-center space-y-4 px-8">
           <div className="text-6xl animate-bounce">{ft?.emoji ?? "🥣"}</div>
           <p className="text-lg font-bold text-stone-700">記録したよ！</p>
@@ -121,7 +121,7 @@ export default function FeedingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F5F2] pb-24">
+    <div className="min-h-screen bg-canvas pb-24">
       <header className="bg-white border-b border-stone-100 sticky top-0 z-40">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">
           <button onClick={() => router.back()} className="text-stone-400 hover:text-stone-600 text-sm transition-colors">
@@ -147,12 +147,12 @@ export default function FeedingPage() {
                   onClick={() => setFoodType(ft.key)}
                   className={`py-3 rounded-xl flex flex-col items-center gap-1 transition-all active:scale-95 border-2 ${
                     foodType === ft.key
-                      ? "border-[#F69F9A] bg-stone-50"
+                      ? "border-primary bg-stone-50"
                       : "border-stone-100 bg-white hover:border-stone-200"
                   }`}
                 >
                   <span className="text-2xl">{ft.emoji}</span>
-                  <span className={`text-[10px] font-semibold ${foodType === ft.key ? "text-[#F69F9A]" : "text-stone-400"}`}>
+                  <span className={`text-[10px] font-semibold ${foodType === ft.key ? "text-primary" : "text-stone-400"}`}>
                     {ft.key}
                   </span>
                 </button>
@@ -187,7 +187,7 @@ export default function FeedingPage() {
                   onClick={() => setAmount(String(g))}
                   className={`py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-95 border ${
                     amount === String(g)
-                      ? "bg-[#F69F9A] text-white border-[#F69F9A]"
+                      ? "bg-primary text-white border-primary"
                       : "bg-white text-stone-600 border-stone-200 hover:border-stone-300"
                   }`}
                 >

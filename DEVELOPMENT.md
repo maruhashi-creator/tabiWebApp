@@ -167,6 +167,16 @@ Prismaに `CareLog` モデルを追加し `prisma db push` 済み。
 
 ---
 
+### 約物半角フォント（Yaku Han JP）導入
+
+`font-feature-settings: "palt"` の代わりに、約物専用フォント「Yaku Han JP」を CDN（jsDelivr）で導入。
+
+- `layout.tsx` の `<head>` に jsDelivr の CSS リンクを追加
+- `Inter` を CSS 変数（`--font-inter`）として定義し直し
+- `globals.css` の `body` に `font-family: "YakuHanJP", var(--font-inter), sans-serif` を設定
+
+---
+
 ## 技術スタック
 
 - Next.js 14 App Router

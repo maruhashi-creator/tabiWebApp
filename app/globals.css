@@ -5,6 +5,7 @@
 @layer base {
   body {
     @apply bg-canvas text-ink;
+    font-family: "YakuHanJP", var(--font-inter), sans-serif;
   }
 }
 

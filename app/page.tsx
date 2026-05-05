@@ -336,7 +336,7 @@ function QuickButton({ href, emoji, label, done }: { href: string; emoji: string
   return (
     <Link
       href={href}
-      className="relative card p-4 text-center active:scale-95 transform transition-transform block"
+      className="relative card py-4 px-2 text-center active:scale-95 transform transition-transform block"
     >
       {done && (
         <span className="absolute top-2 right-2 text-primary text-xs">✓</span>

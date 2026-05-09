@@ -4,6 +4,7 @@ import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { guardCatOwnership } from "@/lib/cat-auth";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -15,7 +16,10 @@ export async function GET(req: NextRequest) {
   const from = searchParams.get("from");
   const to = searchParams.get("to");
 
-  const where: Record<string, unknown> = { catId: catId ?? undefined };
+  const guard = await guardCatOwnership(catId, session.user.id);
+  if (guard) return guard;
+
+  const where: Record<string, unknown> = { catId: catId! };
   if (from && to) {
     where.doneAt = {
       gte: new Date(`${from}T00:00:00.000+09:00`),
@@ -47,6 +51,9 @@ export async function POST(req: NextRequest) {
   if (!catId || !type || !doneAt) {
     return Response.json({ error: "catId, type, doneAt は必須です" }, { status: 400 });
   }
+
+  const guard = await guardCatOwnership(catId, session.user.id);
+  if (guard) return guard;
 
   const log = await prisma.careLog.create({
     data: {

@@ -14,6 +14,18 @@
 
 ## 主な変更履歴
 
+### セキュリティ: API ルートの catId 所有権チェック
+
+全ログ API (weight / feeding / toilet / medication / care) の GET・POST で、リクエストの `catId` がログインユーザーの猫かどうかを検証していなかった問題を修正。
+
+- **新規:** `lib/cat-auth.ts` に `guardCatOwnership(catId, userId)` ヘルパーを追加
+  - `catId` が未指定 → 400
+  - 別ユーザーの猫 → 403
+- 各 API ルートの GET・POST 冒頭でヘルパーを呼び出す形に統一
+- `/api/cat` PATCH は既存の Prisma `where` 句で所有権チェック済みだったが、マッチしない場合に 500 を返していた → P2025 を 403 に変換
+
+---
+
 ### ボトムナビゲーション再設計
 
 **変更前:** ホーム / ごはん / トイレ / 体重 / お薬  

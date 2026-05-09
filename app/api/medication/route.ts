@@ -4,6 +4,7 @@ import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { guardCatOwnership } from "@/lib/cat-auth";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -13,8 +14,11 @@ export async function GET(req: NextRequest) {
   const catId = searchParams.get("catId");
   const limit = Number(searchParams.get("limit") ?? "10");
 
+  const guard = await guardCatOwnership(catId, session.user.id);
+  if (guard) return guard;
+
   const logs = await prisma.medicationLog.findMany({
-    where: { catId: catId ?? undefined },
+    where: { catId: catId! },
     include: { user: { select: { name: true } } },
     orderBy: { givenAt: "desc" },
     take: limit,
@@ -38,6 +42,9 @@ export async function POST(req: NextRequest) {
   if (!catId || !name || !givenAt) {
     return Response.json({ error: "catId, name, givenAt は必須です" }, { status: 400 });
   }
+
+  const guard = await guardCatOwnership(catId, session.user.id);
+  if (guard) return guard;
 
   const log = await prisma.medicationLog.create({
     data: {

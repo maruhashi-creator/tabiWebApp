@@ -4,3 +4,4 @@ node_modules/
 .env.local
 generated/
 .DS_Store
+tsconfig.tsbuildinfo

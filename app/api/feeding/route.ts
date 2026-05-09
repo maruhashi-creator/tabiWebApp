@@ -4,6 +4,8 @@ import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { guardCatOwnership } from "@/lib/cat-auth";
+
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -12,10 +14,13 @@ export async function GET(req: NextRequest) {
   const date = searchParams.get("date");
   const catId = searchParams.get("catId");
 
+  const guard = await guardCatOwnership(catId, session.user.id);
+  if (guard) return guard;
+
   const from = searchParams.get("from");
   const to = searchParams.get("to");
 
-  const where: Record<string, unknown> = { catId: catId ?? undefined };
+  const where: Record<string, unknown> = { catId: catId! };
   if (date) {
     where.fedAt = {
       gte: new Date(`${date}T00:00:00.000+09:00`),
@@ -49,9 +54,15 @@ export async function POST(req: NextRequest) {
     foodType?: string;
   };
 
-  if (!catId || !amount || !fedAt) {
+  if (!catId || !fedAt) {
     return Response.json({ error: "catId, amount, fedAt は必須です" }, { status: 400 });
   }
+  if (typeof amount !== "number" || amount <= 0 || !isFinite(amount)) {
+    return Response.json({ error: "amount は正の数値で入力してください" }, { status: 400 });
+  }
+
+  const guard = await guardCatOwnership(catId, session.user.id);
+  if (guard) return guard;
 
   const log = await prisma.feedingLog.create({
     data: {

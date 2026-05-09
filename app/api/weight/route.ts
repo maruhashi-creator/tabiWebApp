@@ -4,6 +4,7 @@ import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { guardCatOwnership } from "@/lib/cat-auth";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -13,8 +14,11 @@ export async function GET(req: NextRequest) {
   const catId = searchParams.get("catId");
   const limit = Number(searchParams.get("limit") ?? "30");
 
+  const guard = await guardCatOwnership(catId, session.user.id);
+  if (guard) return guard;
+
   const logs = await prisma.weightLog.findMany({
-    where: { catId: catId ?? undefined },
+    where: { catId: catId! },
     include: { user: { select: { name: true } } },
     orderBy: { measuredAt: "desc" },
     take: limit,
@@ -34,9 +38,15 @@ export async function POST(req: NextRequest) {
     note?: string;
   };
 
-  if (!catId || !weight || !measuredAt) {
+  if (!catId || !measuredAt) {
     return Response.json({ error: "catId, weight, measuredAt は必須です" }, { status: 400 });
   }
+  if (typeof weight !== "number" || weight <= 0 || !isFinite(weight)) {
+    return Response.json({ error: "weight は正の数値で入力してください" }, { status: 400 });
+  }
+
+  const guard = await guardCatOwnership(catId, session.user.id);
+  if (guard) return guard;
 
   const log = await prisma.weightLog.create({
     data: {

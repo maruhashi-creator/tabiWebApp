@@ -54,8 +54,11 @@ export async function POST(req: NextRequest) {
     foodType?: string;
   };
 
-  if (!catId || !amount || !fedAt) {
+  if (!catId || !fedAt) {
     return Response.json({ error: "catId, amount, fedAt は必須です" }, { status: 400 });
+  }
+  if (typeof amount !== "number" || amount <= 0 || !isFinite(amount)) {
+    return Response.json({ error: "amount は正の数値で入力してください" }, { status: 400 });
   }
 
   const guard = await guardCatOwnership(catId, session.user.id);

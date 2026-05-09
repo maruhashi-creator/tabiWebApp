@@ -38,8 +38,11 @@ export async function POST(req: NextRequest) {
     note?: string;
   };
 
-  if (!catId || !weight || !measuredAt) {
+  if (!catId || !measuredAt) {
     return Response.json({ error: "catId, weight, measuredAt は必須です" }, { status: 400 });
+  }
+  if (typeof weight !== "number" || weight <= 0 || !isFinite(weight)) {
+    return Response.json({ error: "weight は正の数値で入力してください" }, { status: 400 });
   }
 
   const guard = await guardCatOwnership(catId, session.user.id);

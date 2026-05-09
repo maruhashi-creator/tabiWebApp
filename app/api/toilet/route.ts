@@ -57,6 +57,9 @@ export async function POST(req: NextRequest) {
   if (!catId || !type || !loggedAt) {
     return Response.json({ error: "catId, type, loggedAt は必須です" }, { status: 400 });
   }
+  if (count !== undefined && (!Number.isInteger(count) || count < 1)) {
+    return Response.json({ error: "count は1以上の整数で入力してください" }, { status: 400 });
+  }
 
   const guard = await guardCatOwnership(catId, session.user.id);
   if (guard) return guard;

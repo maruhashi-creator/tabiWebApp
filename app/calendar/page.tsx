@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths, isToday } from "date-fns";
 import { ja } from "date-fns/locale";
 
 interface Cat { id: string; name: string }
-interface FeedingLog { id: string; amount: number; foodType: string | null; fedAt: string; user: { name: string } }
+interface FeedingLog { id: string; amount: number; foodType: string | null; fedAt: string; note?: string | null; user: { name: string } }
 interface ToiletLog { id: string; type: string; count: number; loggedAt: string; user: { name: string } }
-interface WeightLog { id: string; weight: number; measuredAt: string; user: { name: string } }
+interface WeightLog { id: string; weight: number; measuredAt: string; note?: string | null; user: { name: string } }
 interface MedicationLog { id: string; name: string; dosage: string | null; givenAt: string; user: { name: string } }
 interface CareLog { id: string; type: string; doneAt: string; user: { name: string } }
 
@@ -80,6 +80,22 @@ export default function CalendarPage() {
       setLoading(false);
     });
   }, [cat, month]);
+
+  const handleDelete = useCallback((type: string, id: string) => {
+    if (type === "feeding") setFeedings((p) => p.filter((x) => x.id !== id));
+    else if (type === "toilet") setToilets((p) => p.filter((x) => x.id !== id));
+    else if (type === "weight") setWeights((p) => p.filter((x) => x.id !== id));
+    else if (type === "medication") setMedications((p) => p.filter((x) => x.id !== id));
+    else if (type === "care") setCares((p) => p.filter((x) => x.id !== id));
+  }, []);
+
+  const handleUpdate = useCallback((type: string, updated: FeedingLog | ToiletLog | WeightLog | MedicationLog | CareLog) => {
+    if (type === "feeding") setFeedings((p) => p.map((x) => x.id === updated.id ? updated as FeedingLog : x));
+    else if (type === "toilet") setToilets((p) => p.map((x) => x.id === updated.id ? updated as ToiletLog : x));
+    else if (type === "weight") setWeights((p) => p.map((x) => x.id === updated.id ? updated as WeightLog : x));
+    else if (type === "medication") setMedications((p) => p.map((x) => x.id === updated.id ? updated as MedicationLog : x));
+    else if (type === "care") setCares((p) => p.map((x) => x.id === updated.id ? updated as CareLog : x));
+  }, []);
 
   if (loading) return <div className="min-h-screen bg-canvas" />;
 
@@ -186,14 +202,30 @@ export default function CalendarPage() {
         medications={medications}
         cares={cares}
         onClose={() => setSelectedDay(null)}
+        onDelete={handleDelete}
+        onUpdate={handleUpdate}
       />
 
     </div>
   );
 }
 
+function buildTimestamp(originalIso: string, timeStr: string): string {
+  const date = format(new Date(originalIso), "yyyy-MM-dd");
+  return new Date(`${date}T${timeStr}:00.000+09:00`).toISOString();
+}
+
+function foodEmoji(foodType: string | null) {
+  if (foodType === "ミルク") return "🥛";
+  if (foodType === "おやつ") return "🍬";
+  if (foodType === "ウェット") return "🍖";
+  return "🥣";
+}
+
+type AnyLog = FeedingLog | ToiletLog | WeightLog | MedicationLog | CareLog;
+
 function DaySheet({
-  day, feedings, toilets, weights, medications, cares, onClose,
+  day, feedings, toilets, weights, medications, cares, onClose, onDelete, onUpdate,
 }: {
   day: string | null;
   feedings: FeedingLog[];
@@ -202,16 +234,23 @@ function DaySheet({
   medications: MedicationLog[];
   cares: CareLog[];
   onClose: () => void;
+  onDelete: (type: string, id: string) => void;
+  onUpdate: (type: string, updated: AnyLog) => void;
 }) {
   const sheetRef = useRef<HTMLDivElement>(null);
   const open = day !== null;
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editFields, setEditFields] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
 
-  // キーボードESCで閉じる
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") { setEditingId(null); onClose(); } };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
+
+  // 別の日を開いたら編集状態をリセット
+  useEffect(() => { setEditingId(null); }, [day]);
 
   if (!day) return null;
 
@@ -229,22 +268,70 @@ function DaySheet({
 
   const dateLabel = format(new Date(day), "M月d日(E)", { locale: ja });
 
-  function foodEmoji(foodType: string | null) {
-    if (foodType === "ミルク") return "🥛";
-    if (foodType === "おやつ") return "🍬";
-    if (foodType === "ウェット") return "🍖";
-    return "🥣";
+  function startEdit(id: string, fields: Record<string, string>) {
+    setEditingId(id);
+    setEditFields(fields);
   }
+
+  async function saveEdit(apiType: string, id: string, body: Record<string, unknown>) {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/${apiType}?id=${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        onUpdate(apiType, updated);
+        setEditingId(null);
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function doDelete(apiType: string, id: string) {
+    if (!confirm("この記録を削除しますか？")) return;
+    const res = await fetch(`/api/${apiType}?id=${id}`, { method: "DELETE" });
+    if (res.ok) onDelete(apiType, id);
+  }
+
+  const actionButtons = (apiType: string, id: string, onEdit: () => void) => (
+    <div className="flex items-center gap-1 ml-1 shrink-0">
+      <button
+        onClick={onEdit}
+        className="w-7 h-7 flex items-center justify-center text-stone-300 hover:text-stone-500 transition-colors text-sm"
+        aria-label="編集"
+      >✏</button>
+      <button
+        onClick={() => doDelete(apiType, id)}
+        className="w-7 h-7 flex items-center justify-center text-stone-300 hover:text-red-400 transition-colors text-lg leading-none"
+        aria-label="削除"
+      >×</button>
+    </div>
+  );
+
+  const editActions = (onSave: () => void) => (
+    <div className="flex gap-2 mt-2 pl-10">
+      <button
+        onClick={onSave}
+        disabled={saving}
+        className="text-xs bg-primary text-white px-3 py-1 rounded-full disabled:opacity-50"
+      >保存</button>
+      <button onClick={() => setEditingId(null)} className="text-xs text-stone-400 px-3 py-1">キャンセル</button>
+    </div>
+  );
+
+  const inputCls = "border border-stone-200 rounded-lg px-2 py-1 text-sm text-stone-700 bg-white focus:outline-none focus:border-primary";
 
   return (
     <>
-      {/* オーバーレイ */}
       <div
         className={`fixed inset-0 bg-black/20 z-40 transition-opacity ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
-        onClick={onClose}
+        onClick={() => { setEditingId(null); onClose(); }}
       />
 
-      {/* ボトムシート */}
       <div
         ref={sheetRef}
         className={`fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-xl transition-transform duration-300 ${
@@ -252,87 +339,237 @@ function DaySheet({
         }`}
         style={{ maxHeight: "70vh" }}
       >
-        {/* ハンドル */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 rounded-full bg-stone-200" />
         </div>
 
-        {/* ヘッダー */}
         <div className="px-5 py-3 flex items-center justify-between border-b border-stone-100">
           <p className="text-sm font-bold text-stone-800">{dateLabel}</p>
-          <button onClick={onClose} className="text-stone-300 hover:text-stone-500 transition-colors text-xl leading-none">×</button>
+          <button onClick={() => { setEditingId(null); onClose(); }} className="text-stone-300 hover:text-stone-500 transition-colors text-xl leading-none">×</button>
         </div>
 
-        {/* コンテンツ */}
         <div className="overflow-y-auto" style={{ maxHeight: "calc(70vh - 80px)" }}>
           {dayFeedings.length === 0 && dayToilets.length === 0 && dayWeights.length === 0 && dayMeds.length === 0 && dayCares.length === 0 ? (
             <p className="text-center text-sm text-stone-300 py-10">この日の記録はありません</p>
           ) : (
             <div className="divide-y divide-stone-50">
+
               {dayFeedings.map((f) => (
-                <div key={f.id} className="px-5 py-3 flex items-center gap-3">
-                  <span className="text-xl w-7 text-center">{foodEmoji(f.foodType)}</span>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-stone-700">
-                      {f.foodType ?? "ごはん"}
-                      <span className="text-xs font-normal text-stone-400 ml-1">
-                        {f.amount}{f.foodType === "ミルク" ? "ml" : "g"}
-                      </span>
-                    </p>
-                    <p className="text-xs text-stone-400">{f.user.name}</p>
-                  </div>
-                  <p className="text-xs text-stone-400 tabular-nums">{format(new Date(f.fedAt), "HH:mm")}</p>
+                <div key={f.id} className="px-5 py-3">
+                  {editingId === f.id ? (
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl w-7 text-center">{foodEmoji(f.foodType)}</span>
+                        <input
+                          type="number" min="0.1" step="0.1"
+                          value={editFields.amount ?? ""}
+                          onChange={(e) => setEditFields((p) => ({ ...p, amount: e.target.value }))}
+                          className={`w-20 ${inputCls}`}
+                        />
+                        <span className="text-xs text-stone-400">{f.foodType === "ミルク" ? "ml" : "g"}</span>
+                        <input
+                          type="time"
+                          value={editFields.time ?? ""}
+                          onChange={(e) => setEditFields((p) => ({ ...p, time: e.target.value }))}
+                          className={inputCls}
+                        />
+                      </div>
+                      {editActions(() => saveEdit("feeding", f.id, {
+                        amount: parseFloat(editFields.amount),
+                        fedAt: buildTimestamp(f.fedAt, editFields.time),
+                      }))}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl w-7 text-center">{foodEmoji(f.foodType)}</span>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-stone-700">
+                          {f.foodType ?? "ごはん"}
+                          <span className="text-xs font-normal text-stone-400 ml-1">
+                            {f.amount}{f.foodType === "ミルク" ? "ml" : "g"}
+                          </span>
+                        </p>
+                        <p className="text-xs text-stone-400">{f.user.name}</p>
+                      </div>
+                      <p className="text-xs text-stone-400 tabular-nums">{format(new Date(f.fedAt), "HH:mm")}</p>
+                      {actionButtons("feeding", f.id, () => startEdit(f.id, {
+                        amount: String(f.amount),
+                        time: format(new Date(f.fedAt), "HH:mm"),
+                      }))}
+                    </div>
+                  )}
                 </div>
               ))}
+
               {dayToilets.map((t) => (
-                <div key={t.id} className="px-5 py-3 flex items-center gap-3">
-                  <span className="text-xl w-7 text-center">{t.type === "URINE" ? "💧" : "🌼"}</span>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-stone-700">
-                      {t.type === "URINE" ? "おしっこ" : "うんち"}
-                      <span className="text-xs font-normal text-stone-400 ml-1">{t.count}回</span>
-                    </p>
-                    <p className="text-xs text-stone-400">{t.user.name}</p>
-                  </div>
-                  <p className="text-xs text-stone-400 tabular-nums">{format(new Date(t.loggedAt), "HH:mm")}</p>
+                <div key={t.id} className="px-5 py-3">
+                  {editingId === t.id ? (
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl w-7 text-center">{t.type === "URINE" ? "💧" : "🌼"}</span>
+                        <input
+                          type="number" min="1" step="1"
+                          value={editFields.count ?? ""}
+                          onChange={(e) => setEditFields((p) => ({ ...p, count: e.target.value }))}
+                          className={`w-16 ${inputCls}`}
+                        />
+                        <span className="text-xs text-stone-400">回</span>
+                        <input
+                          type="time"
+                          value={editFields.time ?? ""}
+                          onChange={(e) => setEditFields((p) => ({ ...p, time: e.target.value }))}
+                          className={inputCls}
+                        />
+                      </div>
+                      {editActions(() => saveEdit("toilet", t.id, {
+                        count: parseInt(editFields.count, 10),
+                        loggedAt: buildTimestamp(t.loggedAt, editFields.time),
+                      }))}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl w-7 text-center">{t.type === "URINE" ? "💧" : "🌼"}</span>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-stone-700">
+                          {t.type === "URINE" ? "おしっこ" : "うんち"}
+                          <span className="text-xs font-normal text-stone-400 ml-1">{t.count}回</span>
+                        </p>
+                        <p className="text-xs text-stone-400">{t.user.name}</p>
+                      </div>
+                      <p className="text-xs text-stone-400 tabular-nums">{format(new Date(t.loggedAt), "HH:mm")}</p>
+                      {actionButtons("toilet", t.id, () => startEdit(t.id, {
+                        count: String(t.count),
+                        time: format(new Date(t.loggedAt), "HH:mm"),
+                      }))}
+                    </div>
+                  )}
                 </div>
               ))}
+
               {dayWeights.map((w) => (
-                <div key={w.id} className="px-5 py-3 flex items-center gap-3">
-                  <span className="text-xl w-7 text-center">⚖️</span>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-stone-700">
-                      {w.weight.toFixed(2)}
-                      <span className="text-xs font-normal text-stone-400 ml-0.5">kg</span>
-                    </p>
-                    <p className="text-xs text-stone-400">{w.user.name}</p>
-                  </div>
-                  <p className="text-xs text-stone-400 tabular-nums">{format(new Date(w.measuredAt), "HH:mm")}</p>
+                <div key={w.id} className="px-5 py-3">
+                  {editingId === w.id ? (
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl w-7 text-center">⚖️</span>
+                        <input
+                          type="number" min="0.01" step="0.01"
+                          value={editFields.weight ?? ""}
+                          onChange={(e) => setEditFields((p) => ({ ...p, weight: e.target.value }))}
+                          className={`w-20 ${inputCls}`}
+                        />
+                        <span className="text-xs text-stone-400">kg</span>
+                        <input
+                          type="time"
+                          value={editFields.time ?? ""}
+                          onChange={(e) => setEditFields((p) => ({ ...p, time: e.target.value }))}
+                          className={inputCls}
+                        />
+                      </div>
+                      {editActions(() => saveEdit("weight", w.id, {
+                        weight: parseFloat(editFields.weight),
+                        measuredAt: buildTimestamp(w.measuredAt, editFields.time),
+                      }))}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl w-7 text-center">⚖️</span>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-stone-700">
+                          {w.weight.toFixed(2)}
+                          <span className="text-xs font-normal text-stone-400 ml-0.5">kg</span>
+                        </p>
+                        <p className="text-xs text-stone-400">{w.user.name}</p>
+                      </div>
+                      <p className="text-xs text-stone-400 tabular-nums">{format(new Date(w.measuredAt), "HH:mm")}</p>
+                      {actionButtons("weight", w.id, () => startEdit(w.id, {
+                        weight: String(w.weight),
+                        time: format(new Date(w.measuredAt), "HH:mm"),
+                      }))}
+                    </div>
+                  )}
                 </div>
               ))}
+
               {dayMeds.map((m) => (
-                <div key={m.id} className="px-5 py-3 flex items-center gap-3">
-                  <span className="text-xl w-7 text-center">💊</span>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-stone-700">
-                      {m.name}
-                      {m.dosage && <span className="text-xs font-normal text-stone-400 ml-1">{m.dosage}</span>}
-                    </p>
-                    <p className="text-xs text-stone-400">{m.user.name}</p>
-                  </div>
-                  <p className="text-xs text-stone-400 tabular-nums">{format(new Date(m.givenAt), "HH:mm")}</p>
+                <div key={m.id} className="px-5 py-3">
+                  {editingId === m.id ? (
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xl w-7 text-center">💊</span>
+                        <input
+                          type="text"
+                          value={editFields.name ?? ""}
+                          onChange={(e) => setEditFields((p) => ({ ...p, name: e.target.value }))}
+                          className={`flex-1 min-w-0 ${inputCls}`}
+                          placeholder="薬名"
+                        />
+                        <input
+                          type="time"
+                          value={editFields.time ?? ""}
+                          onChange={(e) => setEditFields((p) => ({ ...p, time: e.target.value }))}
+                          className={inputCls}
+                        />
+                      </div>
+                      {editActions(() => saveEdit("medication", m.id, {
+                        name: editFields.name,
+                        givenAt: buildTimestamp(m.givenAt, editFields.time),
+                      }))}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl w-7 text-center">💊</span>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-stone-700">
+                          {m.name}
+                          {m.dosage && <span className="text-xs font-normal text-stone-400 ml-1">{m.dosage}</span>}
+                        </p>
+                        <p className="text-xs text-stone-400">{m.user.name}</p>
+                      </div>
+                      <p className="text-xs text-stone-400 tabular-nums">{format(new Date(m.givenAt), "HH:mm")}</p>
+                      {actionButtons("medication", m.id, () => startEdit(m.id, {
+                        name: m.name,
+                        time: format(new Date(m.givenAt), "HH:mm"),
+                      }))}
+                    </div>
+                  )}
                 </div>
               ))}
+
               {dayCares.map((c) => (
-                <div key={c.id} className="px-5 py-3 flex items-center gap-3">
-                  <span className="text-xl w-7 text-center">🐾</span>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-stone-700">{c.type}</p>
-                    <p className="text-xs text-stone-400">{c.user.name}</p>
-                  </div>
-                  <p className="text-xs text-stone-400 tabular-nums">{format(new Date(c.doneAt), "HH:mm")}</p>
+                <div key={c.id} className="px-5 py-3">
+                  {editingId === c.id ? (
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl w-7 text-center">🐾</span>
+                        <span className="text-sm text-stone-600">{c.type}</span>
+                        <input
+                          type="time"
+                          value={editFields.time ?? ""}
+                          onChange={(e) => setEditFields((p) => ({ ...p, time: e.target.value }))}
+                          className={inputCls}
+                        />
+                      </div>
+                      {editActions(() => saveEdit("care", c.id, {
+                        doneAt: buildTimestamp(c.doneAt, editFields.time),
+                      }))}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl w-7 text-center">🐾</span>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-stone-700">{c.type}</p>
+                        <p className="text-xs text-stone-400">{c.user.name}</p>
+                      </div>
+                      <p className="text-xs text-stone-400 tabular-nums">{format(new Date(c.doneAt), "HH:mm")}</p>
+                      {actionButtons("care", c.id, () => startEdit(c.id, {
+                        time: format(new Date(c.doneAt), "HH:mm"),
+                      }))}
+                    </div>
+                  )}
                 </div>
               ))}
+
             </div>
           )}
         </div>

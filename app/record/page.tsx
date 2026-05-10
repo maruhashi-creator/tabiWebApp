@@ -4,14 +4,13 @@ import { useState, useEffect } from "react";
 import { format } from "date-fns";
 
 interface Cat { id: string; name: string }
-type Tab = "feeding" | "toilet" | "weight" | "medication" | "care";
+type Tab = "feeding" | "toilet" | "weight" | "care";
 
 const TABS: { key: Tab; emoji: string; label: string }[] = [
   { key: "feeding", emoji: "🍚", label: "ごはん" },
   { key: "toilet", emoji: "🚿", label: "トイレ" },
   { key: "weight", emoji: "⚖️", label: "体重" },
   { key: "care", emoji: "🐾", label: "ケア" },
-  { key: "medication", emoji: "💊", label: "お薬" },
 ];
 
 export default function RecordPage() {
@@ -56,7 +55,6 @@ export default function RecordPage() {
         {tab === "feeding" && <FeedingForm cat={cat} />}
         {tab === "toilet" && <ToiletForm cat={cat} />}
         {tab === "weight" && <WeightForm cat={cat} />}
-        {tab === "medication" && <MedicationForm cat={cat} />}
         {tab === "care" && <CareForm cat={cat} />}
       </main>
 
@@ -341,80 +339,6 @@ function WeightForm({ cat }: { cat: Cat }) {
   );
 }
 
-function MedicationForm({ cat }: { cat: Cat }) {
-  const [name, setName] = useState("");
-  const [dosage, setDosage] = useState("");
-  const [givenAt, setGivenAt] = useState(format(new Date(), "HH:mm"));
-  const [note, setNote] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState("");
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    setError("");
-    try {
-      const res = await fetch("/api/medication", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          catId: cat.id, name, dosage: dosage || undefined,
-          givenAt: new Date(`${format(new Date(), "yyyy-MM-dd")}T${givenAt}:00+09:00`).toISOString(),
-          note: note || undefined,
-        }),
-      });
-      if (res.ok) {
-        setSuccess(true);
-        setTimeout(() => { setSuccess(false); setName(""); setDosage(""); setNote(""); }, 1500);
-      } else {
-        const d = await res.json();
-        setError(d.error ?? "エラーが発生しました");
-      }
-    } catch {
-      setError("通信エラーが発生しました");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  if (success) return <SuccessBanner emoji="💊" message="お薬を記録したよ！" />;
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="card p-5 space-y-4">
-        <div>
-          <label className="block text-xs font-semibold text-stone-400 mb-1.5">薬名</label>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)}
-            placeholder="アモキシシリン など" className="input" required autoFocus />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-stone-400 mb-1.5">用量（任意）</label>
-          <input type="text" value={dosage} onChange={(e) => setDosage(e.target.value)}
-            placeholder="1錠、0.5ml など" className="input" />
-        </div>
-      </div>
-
-      <div className="card p-5 space-y-4">
-        <div>
-          <label className="block text-xs font-semibold text-stone-400 mb-1.5">投薬時刻</label>
-          <input type="time" step={300} value={givenAt} onChange={(e) => setGivenAt(e.target.value)} className="input" required />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-stone-400 mb-1.5">メモ（任意）</label>
-          <input type="text" value={note} onChange={(e) => setNote(e.target.value)}
-            placeholder="嫌がった、おやつに混ぜた など" className="input" />
-        </div>
-      </div>
-
-      {error && <p className="text-xs text-red-400 px-1">{error}</p>}
-      <button type="submit" disabled={saving || !name} className="btn-primary w-full py-4 text-base">
-        {saving ? "記録中..." : "記録する"}
-      </button>
-    </form>
-  );
-}
-
 function SuccessBanner({ emoji, message }: { emoji: string; message: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 gap-4">
@@ -460,10 +384,21 @@ function daysSince(iso: string) {
   return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
 }
 
+const CARE_GROUPS_UPPER = CARE_GROUPS.slice(0, 2);
+const CARE_GROUPS_LOWER = CARE_GROUPS.slice(2);
+
 function CareForm({ cat }: { cat: Cat }) {
   const [lastRecords, setLastRecords] = useState<Record<string, CareLog>>({});
   const [recording, setRecording] = useState<Record<string, boolean>>({});
   const [justDone, setJustDone] = useState<Record<string, boolean>>({});
+
+  const [medOpen, setMedOpen] = useState(false);
+  const [medName, setMedName] = useState("");
+  const [medDosage, setMedDosage] = useState("");
+  const [medGivenAt, setMedGivenAt] = useState(format(new Date(), "HH:mm"));
+  const [medSaving, setMedSaving] = useState(false);
+  const [medJustDone, setMedJustDone] = useState(false);
+  const [lastMed, setLastMed] = useState<{ name: string; givenAt: string } | null>(null);
 
   useEffect(() => {
     fetch(`/api/care?catId=${cat.id}&limit=100`)
@@ -475,7 +410,41 @@ function CareForm({ cat }: { cat: Cat }) {
         }
         setLastRecords(map);
       });
+    fetch(`/api/medication?catId=${cat.id}&limit=1`)
+      .then((r) => r.json())
+      .then((logs) => {
+        if (Array.isArray(logs) && logs[0]) setLastMed({ name: logs[0].name, givenAt: logs[0].givenAt });
+      })
+      .catch(() => {});
   }, [cat.id]);
+
+  async function recordMedication() {
+    if (medSaving || !medName) return;
+    setMedSaving(true);
+    try {
+      const res = await fetch("/api/medication", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          catId: cat.id,
+          name: medName,
+          dosage: medDosage || undefined,
+          givenAt: new Date(`${format(new Date(), "yyyy-MM-dd")}T${medGivenAt}:00+09:00`).toISOString(),
+        }),
+      });
+      if (res.ok) {
+        const log = await res.json();
+        setLastMed({ name: log.name, givenAt: log.givenAt });
+        setMedJustDone(true);
+        setMedOpen(false);
+        setMedName("");
+        setMedDosage("");
+        setTimeout(() => setMedJustDone(false), 1500);
+      }
+    } finally {
+      setMedSaving(false);
+    }
+  }
 
   async function record(type: string) {
     if (recording[type]) return;
@@ -512,43 +481,117 @@ function CareForm({ cat }: { cat: Cat }) {
     return { text: `${days}日前`, overdue, nextDue };
   }
 
+  const careGroup = (group: typeof CARE_GROUPS[number]) => (
+    <div key={group.label}>
+      <p className="text-xs font-semibold text-stone-400 mb-2 px-1">{group.label}</p>
+      <div className="card overflow-hidden divide-y divide-stone-50">
+        {group.items.map((item) => {
+          const done = justDone[item.key];
+          const { text, overdue, nextDue } = lastLabel(item.key, item.cycle);
+          return (
+            <div key={item.key} className="px-4 py-3 flex items-center gap-3">
+              <span className="text-xl w-7 text-center">{item.emoji}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-stone-700">{item.key}</p>
+                <p className={`text-xs ${overdue ? "text-amber-400 font-medium" : "text-stone-400"}`}>
+                  {nextDue
+                    ? `次回 ${nextDue}${overdue ? "・超過" : ""}`
+                    : text + (item.cycle ? `（${item.cycle}日ごと）` : "")}
+                </p>
+              </div>
+              <button
+                onClick={() => record(item.key)}
+                disabled={recording[item.key]}
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all active:scale-95 flex-shrink-0 ${
+                  done
+                    ? "bg-emerald-100 text-emerald-500"
+                    : "bg-stone-100 text-stone-500 hover:bg-stone-200"
+                }`}
+              >
+                {done ? "✓" : "+"}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const medLastText = lastMed
+    ? `最終: ${daysSince(lastMed.givenAt) === 0 ? "今日" : `${daysSince(lastMed.givenAt)}日前`} · ${lastMed.name}`
+    : "未記録";
+
   return (
     <div className="space-y-4 pb-4">
-      {CARE_GROUPS.map((group) => (
-        <div key={group.label}>
-          <p className="text-xs font-semibold text-stone-400 mb-2 px-1">{group.label}</p>
-          <div className="card overflow-hidden divide-y divide-stone-50">
-            {group.items.map((item) => {
-              const done = justDone[item.key];
-              const { text, overdue, nextDue } = lastLabel(item.key, item.cycle);
-              return (
-                <div key={item.key} className="px-4 py-3 flex items-center gap-3">
-                  <span className="text-xl w-7 text-center">{item.emoji}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-stone-700">{item.key}</p>
-                    <p className={`text-xs ${overdue ? "text-amber-400 font-medium" : "text-stone-400"}`}>
-                      {nextDue
-                        ? `次回 ${nextDue}${overdue ? "・超過" : ""}`
-                        : text + (item.cycle ? `（${item.cycle}日ごと）` : "")}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => record(item.key)}
-                    disabled={recording[item.key]}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all active:scale-95 flex-shrink-0 ${
-                      done
-                        ? "bg-emerald-100 text-emerald-500"
-                        : "bg-stone-100 text-stone-500 hover:bg-stone-200"
-                    }`}
-                  >
-                    {done ? "✓" : "+"}
-                  </button>
-                </div>
-              );
-            })}
+      {CARE_GROUPS_UPPER.map(careGroup)}
+
+      {/* 医療的ケア */}
+      <div>
+        <p className="text-xs font-semibold text-stone-400 mb-2 px-1">医療的ケア</p>
+        <div className="card overflow-hidden">
+          <div className="px-4 py-3 flex items-center gap-3">
+            <span className="text-xl w-7 text-center">💊</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-stone-700">お薬</p>
+              <p className="text-xs text-stone-400">{medLastText}</p>
+            </div>
+            <button
+              onClick={() => setMedOpen((p) => !p)}
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all active:scale-95 flex-shrink-0 ${
+                medJustDone
+                  ? "bg-emerald-100 text-emerald-500"
+                  : "bg-stone-100 text-stone-500 hover:bg-stone-200"
+              }`}
+            >
+              {medJustDone ? "✓" : medOpen ? "−" : "+"}
+            </button>
           </div>
+          {medOpen && (
+            <div className="px-4 pb-4 pt-3 border-t border-stone-50 space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-stone-400 mb-1">薬名</label>
+                <input
+                  type="text"
+                  value={medName}
+                  onChange={(e) => setMedName(e.target.value)}
+                  placeholder="アモキシシリン など"
+                  className="input"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-stone-400 mb-1">用量（任意）</label>
+                <input
+                  type="text"
+                  value={medDosage}
+                  onChange={(e) => setMedDosage(e.target.value)}
+                  placeholder="1錠、0.5ml など"
+                  className="input"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-stone-400 mb-1">投薬時刻</label>
+                <input
+                  type="time"
+                  step={300}
+                  value={medGivenAt}
+                  onChange={(e) => setMedGivenAt(e.target.value)}
+                  className="input"
+                />
+              </div>
+              <button
+                onClick={recordMedication}
+                disabled={medSaving || !medName}
+                className="btn-primary w-full py-3 text-sm"
+              >
+                {medSaving ? "記録中..." : "記録する"}
+              </button>
+            </div>
+          )}
         </div>
-      ))}
+      </div>
+
+      {CARE_GROUPS_LOWER.map(careGroup)}
     </div>
   );
 }

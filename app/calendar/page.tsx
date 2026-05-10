@@ -354,13 +354,14 @@ function DaySheet({
           ) : (() => {
             // サマリー計算
             const feedingGrouped: Record<string, number> = {};
-            const feedingOthers: { label: string; amount: number }[] = [];
+            const feedingOthers: Record<string, number> = {};
             for (const f of dayFeedings) {
               const type = f.foodType;
               if (type && type !== "その他") {
                 feedingGrouped[type] = (feedingGrouped[type] ?? 0) + f.amount;
               } else {
-                feedingOthers.push({ label: f.note?.trim() || "🥣", amount: f.amount });
+                const label = f.note?.trim() || "🥣";
+                feedingOthers[label] = (feedingOthers[label] ?? 0) + f.amount;
               }
             }
             const urineCount = dayToilets.filter((t) => t.type === "URINE").reduce((s, t) => s + t.count, 0);
@@ -391,21 +392,29 @@ function DaySheet({
                     {dayFeedings.length > 0 && (
                       <div className="flex items-baseline gap-3">
                         <span className="text-xs font-semibold text-stone-400 w-12 shrink-0">ごはん</span>
-                        <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-                          {Object.entries(feedingGrouped).map(([type, amount]) => {
-                            const label = (type === "カリカリ" || type === "ウェット") ? type : foodEmoji(type);
-                            const unit = type === "ミルク" ? "ml" : "g";
-                            return (
-                              <span key={type} className="text-sm text-stone-700">
-                                {label}<span className="text-stone-400 ml-1">{amount}{unit}</span>
-                              </span>
-                            );
-                          })}
-                          {feedingOthers.map((item, i) => (
-                            <span key={i} className="text-sm text-stone-700">
-                              {item.label}<span className="text-stone-400 ml-1">{item.amount}g</span>
-                            </span>
-                          ))}
+                        <div className="flex flex-col gap-0.5">
+                          {Object.keys(feedingGrouped).length > 0 && (
+                            <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+                              {Object.entries(feedingGrouped).map(([type, amount]) => {
+                                const label = (type === "カリカリ" || type === "ウェット") ? type : foodEmoji(type);
+                                const unit = type === "ミルク" ? "ml" : "g";
+                                return (
+                                  <span key={type} className="text-sm text-stone-700">
+                                    {label}<span className="text-stone-400 ml-1">{amount}{unit}</span>
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
+                          {Object.keys(feedingOthers).length > 0 && (
+                            <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+                              {Object.entries(feedingOthers).map(([label, amount]) => (
+                                <span key={label} className="text-sm text-stone-700">
+                                  {label}<span className="text-stone-400 ml-1">{amount}g</span>
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}

@@ -21,10 +21,10 @@ function catAge(birthday: string | null) {
   return years > 0 ? `${years}歳${months}ヶ月` : `${months}ヶ月`;
 }
 
-function greeting() {
+function greeting(name: string) {
   const h = new Date().getHours();
-  if (h >= 5 && h < 11) return "おはよう、たび！今日もよろしくね 🌅";
-  if (h >= 11 && h < 17) return "たびは元気かな？";
+  if (h >= 5 && h < 11) return `おはよう、${name}！今日もよろしくね 🌅`;
+  if (h >= 11 && h < 17) return `${name}は元気かな？`;
   if (h >= 17 && h < 21) return "今日もよく頑張ったね 🌙";
   return "もうおやすみの時間だよ 😴";
 }
@@ -161,7 +161,7 @@ export default function Dashboard() {
                   )}
                 </div>
                 {cat.breed && <p className="text-xs text-stone-400">{cat.breed}</p>}
-                <p className="text-xs text-stone-500 mt-1">{greeting()}</p>
+                <p className="text-xs text-stone-500 mt-1">{greeting(cat.name)}</p>
               </div>
               {latestWeight && (
                 <div className="text-right flex-shrink-0">
@@ -211,7 +211,7 @@ export default function Dashboard() {
         {/* タイムライン */}
         {(feedings.length > 0 || toilets.length > 0) && (
           <div>
-            <p className="text-xs font-semibold text-stone-400 mb-2 px-1">今日のたび</p>
+            <p className="text-xs font-semibold text-stone-400 mb-2 px-1">今日の{cat?.name ?? "ねこ"}</p>
             <div className="card overflow-hidden divide-y divide-stone-50">
               {[...feedings.map((f) => ({
                 id: f.id,

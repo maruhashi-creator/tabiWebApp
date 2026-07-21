@@ -6,10 +6,11 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { guardCatOwnership } from "@/lib/cat-auth";
+import { isValidDateString } from "@/lib/datetime";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return Response.json({ error: "ログインしてね" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
   const catId = searchParams.get("catId");
@@ -39,7 +40,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return Response.json({ error: "ログインしてね" }, { status: 401 });
 
   const body = await req.json();
   const { catId, type, doneAt, note } = body as {
@@ -50,7 +51,11 @@ export async function POST(req: NextRequest) {
   };
 
   if (!catId || !type || !doneAt) {
-    return Response.json({ error: "catId, type, doneAt は必須です" }, { status: 400 });
+    return Response.json({ error: "ケアの種類と日時を入力してね" }, { status: 400 });
+  }
+
+  if (!isValidDateString(doneAt)) {
+    return Response.json({ error: "日付と時刻を確認してね" }, { status: 400 });
   }
 
   const guard = await guardCatOwnership(catId, session.user.id);
@@ -71,20 +76,24 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return Response.json({ error: "ログインしてね" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
-  if (!id) return Response.json({ error: "id is required" }, { status: 400 });
+  if (!id) return Response.json({ error: "記録が見つからなかったよ" }, { status: 400 });
 
   const { doneAt, note } = await req.json() as {
     doneAt?: string;
     note?: string;
   };
 
+  if (doneAt !== undefined && !isValidDateString(doneAt)) {
+    return Response.json({ error: "日付と時刻を確認してね" }, { status: 400 });
+  }
+
   try {
     const log = await prisma.careLog.update({
-      where: { id, userId: session.user.id },
+      where: { id, cat: { users: { some: { id: session.user.id } } } },
       data: {
         ...(doneAt !== undefined && { doneAt: new Date(doneAt) }),
         ...(note !== undefined && { note }),
@@ -94,7 +103,7 @@ export async function PATCH(req: NextRequest) {
     return Response.json(log);
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
-      return Response.json({ error: "Forbidden" }, { status: 403 });
+      return Response.json({ error: "このねこの記録にはアクセスできないよ" }, { status: 403 });
     }
     throw e;
   }
@@ -102,18 +111,18 @@ export async function PATCH(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return Response.json({ error: "ログインしてね" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
-  if (!id) return Response.json({ error: "id is required" }, { status: 400 });
+  if (!id) return Response.json({ error: "記録が見つからなかったよ" }, { status: 400 });
 
   try {
-    await prisma.careLog.delete({ where: { id, userId: session.user.id } });
+    await prisma.careLog.delete({ where: { id, cat: { users: { some: { id: session.user.id } } } } });
     return Response.json({ ok: true });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
-      return Response.json({ error: "Forbidden" }, { status: 403 });
+      return Response.json({ error: "このねこの記録にはアクセスできないよ" }, { status: 403 });
     }
     throw e;
   }

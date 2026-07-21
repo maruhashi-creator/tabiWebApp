@@ -6,14 +6,14 @@ export async function guardCatOwnership(
   userId: string
 ): Promise<Response | null> {
   if (!catId) {
-    return Response.json({ error: "catId is required" }, { status: 400 });
+    return Response.json({ error: "ねこが選ばれていないよ" }, { status: 400 });
   }
   const cat = await prisma.cat.findFirst({
     where: { id: catId, users: { some: { id: userId } } },
     select: { id: true },
   });
   if (!cat) {
-    return Response.json({ error: "Forbidden" }, { status: 403 });
+    return Response.json({ error: "このねこの記録にはアクセスできないよ" }, { status: 403 });
   }
   return null;
 }

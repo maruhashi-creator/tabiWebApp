@@ -12,16 +12,16 @@ export async function POST(req: NextRequest) {
   };
 
   if (!name || (!email && !phone) || !password) {
-    return Response.json({ error: "name, email または phone, password は必須です" }, { status: 400 });
+    return Response.json({ error: "お名前・連絡先・パスワードをすべて入力してね" }, { status: 400 });
   }
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return Response.json({ error: "メールアドレスの形式が正しくありません" }, { status: 400 });
+    return Response.json({ error: "メールアドレスの形式を確認してね" }, { status: 400 });
   }
   if (phone && !/^0\d{9,10}$/.test(phone.replace(/-/g, ""))) {
-    return Response.json({ error: "電話番号の形式が正しくありません（例: 09012345678）" }, { status: 400 });
+    return Response.json({ error: "電話番号の形式を確認してね（例: 09012345678）" }, { status: 400 });
   }
   if (password.length < 6) {
-    return Response.json({ error: "パスワードは6文字以上で入力してください" }, { status: 400 });
+    return Response.json({ error: "パスワードは6文字以上にしてね" }, { status: 400 });
   }
 
   const existing = await prisma.user.findFirst({

@@ -123,6 +123,7 @@ export default function SettingsPage() {
       if (res.ok) {
         const updated = await res.json();
         setCat(updated);
+        setPhoto(updated.photo ?? null);
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
       } else {

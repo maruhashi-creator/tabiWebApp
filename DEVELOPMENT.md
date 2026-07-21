@@ -14,6 +14,29 @@
 
 ## 主な変更履歴
 
+### UX レビュー「軽微」項目の対応
+
+`docs/ux-review-2026-07-21.md` の「軽微」を一括対応。
+
+- **アクセシビリティ**
+  - `text-stone-300` → `text-stone-400`、操作可能な ×/✏/ログアウトは `text-stone-500` に引き上げ
+  - タップ領域を 44px に拡大。ケアの `+` だけは見た目 32px を保つため `after:-inset-1.5` で当たり判定のみ拡張
+  - `userScalable: false` を撤去。あわせて `layout.tsx` のインラインスクリプト（2本指 touchmove の `preventDefault`、focusout での `user-scalable=no` 再設定）も削除（残すと設定変更が無効化されるため）。iOS のズーム暴発は `globals.css` の `font-size: 16px !important` で引き続き防ぐ
+  - 数値入力に `inputMode`（量・回数は `numeric`、体重は `decimal`）を付与
+- **PWA / レイアウト**
+  - `mobile-web-app-capable` を併記して deprecated 警告を解消
+  - `metadata.viewport` では `viewportFit` が出力されなかったため `export const viewport: Viewport` に分離し `viewport-fit=cover` を設定。`globals.css` に `.safe-area-pb` を実装
+- **文言**
+  - **新規:** `lib/messages.ts`。`MESSAGES` 内の「たび」を `{name}` プレースホルダに置換し `withCatName()` で差し込む。`replaceAll("たび", ...)` は猫の名前に「たび」が含まれると文言が壊れるため廃止。フォールバックは `DEFAULT_CAT_NAME = "ねこ"` に統一
+  - API のエラーメッセージ（`Unauthorized` / `Forbidden` / `catId, amount, fedAt は必須です` など）をユーザー向けの日本語に統一。UI が `d.error` をそのまま表示するため
+  - ホームのアラート「食餌量が…」→「ごはんの量が…」
+- **グラフ**: 食事量を種類別の積み上げ棒に変更し凡例を追加。ml と g を同じ軸に積む点は解消できないため注記を添えて Y軸表記を「g / ml」に
+- **削除**: `/api/anomaly`（参照0件。異常検知は `/api/home` 内に実装済みで二重管理だった）
+
+未対応: `btn-primary` の白文字 on `#F69F9A`（2.03:1）は WCAG AA 未達のまま。トイレ種別の文字ラベルは方針として見送り。
+
+---
+
 ### ホーム画面の挨拶・見出しを猫の名前で動的化
 
 `app/page.tsx` で固定値 `たび` になっていた箇所を、登録された猫の名前 (`cat.name`) で表示するように修正。
@@ -183,7 +206,6 @@ Prismaに `CareLog` モデルを追加し `prisma db push` 済み。
 | `/api/weight` | GET / POST | 体重ログ |
 | `/api/medication` | GET / POST | 投薬ログ |
 | `/api/care` | GET / POST | ケアログ |
-| `/api/anomaly` | GET | 異常検知アラート |
 | `/api/register` | POST | 新規ユーザー登録 |
 
 `/api/feeding`, `/api/toilet`, `/api/care` はクエリパラメータ `from` / `to` による日付範囲絞り込みに対応。

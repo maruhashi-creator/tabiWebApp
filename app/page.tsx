@@ -6,6 +6,7 @@ import { format, differenceInYears, differenceInMonths } from "date-fns";
 import { ja } from "date-fns/locale";
 import Link from "next/link";
 import Image from "next/image";
+import NoCatNotice from "@/components/NoCatNotice";
 
 interface FeedingLog { id: string; amount: number; foodType: string | null; note: string | null; fedAt: string; user: { name: string } }
 interface ToiletLog { id: string; type: string; count: number; loggedAt: string; user: { name: string } }
@@ -47,6 +48,8 @@ export default function Dashboard() {
   const [latestWeight, setLatestWeight] = useState<WeightLog | null>(null);
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [hasCat, setHasCat] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [pullY, setPullY] = useState(0);
   const touchStartY = useRef(0);
@@ -54,13 +57,19 @@ export default function Dashboard() {
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const data = await fetch(`/api/home?date=${today}`).then((r) => r.json());
-      if (!data.cat) return;
+      const res = await fetch(`/api/home?date=${today}`);
+      if (!res.ok) { setLoadError(true); return; }
+      const data = await res.json();
+      setLoadError(false);
+      if (!data.cat) { setHasCat(false); return; }
+      setHasCat(true);
       setCat(data.cat);
       setFeedings(Array.isArray(data.feedings) ? data.feedings : []);
       setToilets(Array.isArray(data.toilets) ? data.toilets : []);
       setLatestWeight(data.latestWeight ?? null);
       setAnomalies(Array.isArray(data.anomalies) ? data.anomalies : []);
+    } catch {
+      setLoadError(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -114,6 +123,23 @@ export default function Dashboard() {
     );
   }
 
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-canvas pb-24 flex items-center justify-center px-6">
+        <div className="bg-white rounded-2xl border border-stone-100 px-6 py-8 text-center max-w-xs w-full">
+          <p className="text-3xl mb-3">📡</p>
+          <p className="text-sm font-bold text-stone-800 mb-1">記録を読み込めませんでした</p>
+          <p className="text-xs text-stone-500 mb-5">通信状況を確認して、もう一度試してみてね</p>
+          <button onClick={() => load()} className="btn-primary w-full py-3 text-sm">
+            再試行
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasCat) return <NoCatNotice />;
+
   return (
     <div className="min-h-screen bg-canvas pb-24">
       {(pullY > 0 || refreshing) && (
@@ -132,7 +158,7 @@ export default function Dashboard() {
             <span className="text-xs text-stone-500">{session?.user.name}</span>
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}
-              className="text-xs text-stone-300 hover:text-stone-500 transition-colors"
+              className="text-xs text-stone-500 hover:text-stone-700 transition-colors py-3.5 px-2 -my-3.5 -mr-2"
             >
               ログアウト
             </button>
@@ -242,11 +268,15 @@ export default function Dashboard() {
                     <button
                       onClick={async () => {
                         if (!confirm("この記録を削除しますか？")) return;
-                        await fetch(`/api/${item.source}?id=${item.id}`, { method: "DELETE" });
+                        const res = await fetch(`/api/${item.source}?id=${item.id}`, { method: "DELETE" });
+                        if (!res.ok) {
+                          alert("記録を削除できませんでした。時間をおいて試してみてね");
+                          return;
+                        }
                         if (item.source === "feeding") setFeedings((prev) => prev.filter((f) => f.id !== item.id));
                         else setToilets((prev) => prev.filter((t) => t.id !== item.id));
                       }}
-                      className="text-stone-200 hover:text-red-400 transition-colors text-lg pl-2"
+                      className="w-11 h-11 -mr-3 flex items-center justify-center text-stone-500 hover:text-red-500 transition-colors text-lg"
                     >
                       ×
                     </button>
@@ -260,7 +290,7 @@ export default function Dashboard() {
           <div className="card p-8 text-center">
             <p className="text-3xl mb-3">🐾</p>
             <p className="text-sm text-stone-500">今日の記録がまだないよ</p>
-            <p className="text-xs text-stone-300 mt-1">ごはんやトイレを記録してみてね</p>
+            <p className="text-xs text-stone-400 mt-1">ごはんやトイレを記録してみてね</p>
           </div>
         )}
 
@@ -276,7 +306,7 @@ function StatusCard({ emoji, label, value, done }: { emoji: string; label: strin
     <div className="card p-3.5 text-center">
       <p className="text-2xl mb-1.5">{emoji}</p>
       {label && <p className="text-[10px] text-stone-400 mb-1">{label}</p>}
-      <p className={`text-xs font-bold ${done ? "text-stone-700" : "text-stone-300"}`}>{value}</p>
+      <p className={`text-xs font-bold ${done ? "text-stone-700" : "text-stone-400"}`}>{value}</p>
       {done && <div className="w-1.5 h-1.5 bg-primary rounded-full mx-auto mt-1.5" />}
     </div>
   );

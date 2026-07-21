@@ -10,12 +10,12 @@ function generateCode(): string {
 
 export async function POST() {
   const session = await getServerSession(authOptions);
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return Response.json({ error: "ログインしてね" }, { status: 401 });
 
   const cat = await prisma.cat.findFirst({
     where: { users: { some: { id: session.user.id } } },
   });
-  if (!cat) return Response.json({ error: "猫が登録されていません" }, { status: 404 });
+  if (!cat) return Response.json({ error: "ねこが登録されていないよ" }, { status: 404 });
 
   let code = generateCode();
   while (await prisma.inviteCode.findUnique({ where: { code } })) {

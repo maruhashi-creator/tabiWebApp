@@ -17,17 +17,17 @@ function toJstDay(date: Date) {
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return Response.json({ error: "ログインしてね" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
   const date = searchParams.get("date");
-  if (!date) return Response.json({ error: "date is required" }, { status: 400 });
+  if (!date) return Response.json({ error: "日付が指定されていないよ" }, { status: 400 });
 
   const cat = await prisma.cat.findFirst({
     where: { users: { some: { id: session.user.id } } },
     orderBy: { name: "asc" },
   });
-  if (!cat) return Response.json({ error: "cat not found" }, { status: 404 });
+  if (!cat) return Response.json({ error: "ねこが登録されていないよ" }, { status: 404 });
 
   const todayStart = new Date(`${date}T00:00:00.000+09:00`);
   const todayEnd = new Date(`${date}T23:59:59.999+09:00`);
@@ -112,7 +112,7 @@ export async function GET(req: NextRequest) {
       anomalies.push({
         type: "feeding",
         level: todayFed === 0 ? "alert" : "warn",
-        message: todayFed === 0 ? "まだごはんの記録がないよ" : "食餌量が平均より少ないかも",
+        message: todayFed === 0 ? "まだごはんの記録がないよ" : "ごはんの量がいつもより少ないかも",
       });
     }
   }

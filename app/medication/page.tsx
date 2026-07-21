@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
+import { toJstIso, todayJst, nowTimeJst } from "@/lib/datetime";
+import { withCatName } from "@/lib/messages";
 
 interface Cat { id: string; name: string }
 interface MedicationLog { id: string; name: string; dosage: string | null; givenAt: string; note: string | null; user: { name: string } }
@@ -10,33 +12,33 @@ interface MedicationLog { id: string; name: string; dosage: string | null; given
 const MESSAGES = [
   "お薬、飲んでくれたかな？",
   "投薬お疲れさま",
-  "たびのために頑張ってるね",
+  "{name}のために頑張ってるね",
   "薬を嫌がらずに飲んでくれたかな？",
   "記録しておくと獣医さんにも役立つよ",
   "今日も投薬できたね、えらい",
-  "たびの回復を一緒に見守ろう",
+  "{name}の回復を一緒に見守ろう",
   "お薬の時間、来たよ",
   "ちゃんと飲んでくれたかな？",
   "投薬記録、大切だよ",
   "毎日続けることが大事だね",
-  "たびのそばにいてくれてありがとう",
+  "{name}のそばにいてくれてありがとう",
   "薬で少しでも楽になってほしいね",
   "飲んでくれてよかった",
   "記録することで変化がわかるよ",
-  "たびの治療、応援してるよ",
+  "{name}の治療、応援してるよ",
   "お薬、忘れずに記録しておこう",
   "一緒に頑張ろうね",
-  "たびが元気になりますように",
+  "{name}が元気になりますように",
   "今日も愛情込めて投薬できたね",
   "ちゃんと続けてるね、すごい",
-  "たびを守ってあげてるんだね",
+  "{name}を守ってあげてるんだね",
   "獣医さんに見せたら喜ばれるよ",
   "記録の積み重ねが信頼になる",
   "今日のお薬、完了だ",
-  "たびのこと、本当によく気にかけてるね",
+  "{name}のこと、本当によく気にかけてるね",
   "薬があるってことは、それだけ大切にしてる証拠",
   "お薬の時間も愛情のひとつだよ",
-  "今日もたびのお世話、ありがとう",
+  "今日も{name}のお世話、ありがとう",
   "一緒に乗り越えよう",
 ];
 
@@ -47,11 +49,12 @@ export default function MedicationPage() {
   const [cat, setCat] = useState<Cat | null>(null);
   const [name, setName] = useState("");
   const [dosage, setDosage] = useState("");
-  const [givenAt, setGivenAt] = useState(format(new Date(), "HH:mm"));
+  const [givenDate, setGivenDate] = useState(todayJst());
+  const [givenAt, setGivenAt] = useState(nowTimeJst());
   const [note, setNote] = useState("");
   const [history, setHistory] = useState<MedicationLog[]>([]);
   const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -66,6 +69,8 @@ export default function MedicationPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!cat) return;
+    const iso = toJstIso(givenDate, givenAt);
+    if (!iso) { setError("日付と時刻を確認してね"); return; }
     setSaving(true);
     setError("");
     try {
@@ -76,13 +81,17 @@ export default function MedicationPage() {
           catId: cat.id,
           name,
           dosage: dosage || undefined,
-          givenAt: new Date(`${format(new Date(), "yyyy-MM-dd")}T${givenAt}:00`).toISOString(),
+          givenAt: iso,
           note: note || undefined,
         }),
       });
       if (res.ok) {
-        setSuccess(true);
-        setTimeout(() => router.push("/"), 1800);
+        const created = await res.json();
+        setHistory((prev) => [created, ...prev]);
+        setDosage("");
+        setNote("");
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2500);
       } else {
         const d = await res.json();
         setError(d.error ?? "エラーが発生しました");
@@ -94,21 +103,6 @@ export default function MedicationPage() {
     }
   }
 
-  if (success) {
-    return (
-      <div className="min-h-screen bg-canvas flex items-center justify-center">
-        <div className="text-center space-y-4 px-8">
-          <div className="text-6xl animate-bounce">💊</div>
-          <p className="text-lg font-bold text-stone-700">記録したよ！</p>
-          <p className="text-sm text-stone-400 leading-relaxed">
-            お薬、ちゃんと飲んでくれたんだね。<br />
-            {cat?.name ?? "ねこ"}のために続けてくれてありがとう 🐾
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-canvas pb-24">
       <header className="bg-white border-b border-stone-100 sticky top-0 z-40">
@@ -118,7 +112,7 @@ export default function MedicationPage() {
           </button>
           <div>
             <h1 className="text-base font-bold text-stone-800">{(cat?.name ?? "ねこ")}のお薬</h1>
-            <p className="text-[10px] text-stone-400">{message.replaceAll("たび", cat?.name ?? "たび")}</p>
+            <p className="text-[10px] text-stone-400">{withCatName(message, cat?.name)}</p>
           </div>
         </div>
       </header>
@@ -151,16 +145,29 @@ export default function MedicationPage() {
           </div>
 
           <div className="card p-5 space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-stone-400 mb-1.5">投薬時刻</label>
-              <input
-                type="time"
-                step={300}
-                value={givenAt}
-                onChange={(e) => setGivenAt(e.target.value)}
-                className="input"
-                required
-              />
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="block text-xs font-semibold text-stone-400 mb-1.5">投薬日</label>
+                <input
+                  type="date"
+                  max={todayJst()}
+                  value={givenDate}
+                  onChange={(e) => setGivenDate(e.target.value)}
+                  className="input"
+                  required
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs font-semibold text-stone-400 mb-1.5">投薬時刻</label>
+                <input
+                  type="time"
+                  step={300}
+                  value={givenAt}
+                  onChange={(e) => setGivenAt(e.target.value)}
+                  className="input"
+                  required
+                />
+              </div>
             </div>
             <div>
               <label className="block text-xs font-semibold text-stone-400 mb-1.5">メモ（任意）</label>
@@ -177,6 +184,16 @@ export default function MedicationPage() {
           {error && (
             <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">
               <p className="text-xs text-red-400">{error}</p>
+            </div>
+          )}
+
+          {saved && (
+            <div className="card p-4 flex items-center gap-3">
+              <span className="text-2xl">💊</span>
+              <div>
+                <p className="text-sm font-bold text-stone-700">記録したよ！</p>
+                <p className="text-xs text-stone-400">続けてくれてありがとう 🐾</p>
+              </div>
             </div>
           )}
 
@@ -200,7 +217,7 @@ export default function MedicationPage() {
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-stone-400 tabular-nums">{format(new Date(h.givenAt), "M/d HH:mm")}</p>
-                    {h.note && <p className="text-xs text-stone-300 mt-0.5">{h.note}</p>}
+                    {h.note && <p className="text-xs text-stone-400 mt-0.5">{h.note}</p>}
                   </div>
                 </div>
               ))}

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
+import { toJstIso, todayJst, nowTimeJst } from "@/lib/datetime";
+import { withCatName } from "@/lib/messages";
 
 interface Cat { id: string; name: string }
 
@@ -25,12 +26,12 @@ function getPresets(foodType: string) {
 
 const MESSAGES = [
   "何を何グラム食べたかな？",
-  "今日もたびのごはん、ありがとう",
+  "今日も{name}のごはん、ありがとう",
   "完食してくれたかな？",
   "おなかすいてた？",
   "今日もおいしく食べられたかな",
   "いっぱい食べて元気でいてね",
-  "たびのごはんの時間、ほっとするよね",
+  "{name}のごはんの時間、ほっとするよね",
   "残さず食べてくれたかな",
   "食欲はあった？",
   "モリモリ食べてくれたかな",
@@ -40,20 +41,20 @@ const MESSAGES = [
   "ゆっくり食べてたかな",
   "ちゃんとお腹いっぱいになったかな",
   "今日のごはんはどんな感じだった？",
-  "たびのごはん姿、かわいいよね",
+  "{name}のごはん姿、かわいいよね",
   "食べる顔、見てた？",
   "今日の分、しっかり食べた？",
   "ごはんの時間、楽しみにしてたかな",
-  "たびのおなか、満たせたかな？",
+  "{name}のおなか、満たせたかな？",
   "毎日のごはん記録、続けてるね",
-  "今日もたびのそばにいてくれてありがとう",
+  "今日も{name}のそばにいてくれてありがとう",
   "食べムラはなかった？",
   "ちゃんと水も飲んでた？",
   "今日もいい子だった？",
-  "ごはん中のたびの顔、想像しただけで笑顔になる",
+  "ごはん中の{name}の顔、想像しただけで笑顔になる",
   "毎日の積み重ね、ちゃんと残してるね",
-  "たびが元気でいてくれるの、ありがとう",
-  "今日もたびのご飯係、お疲れさま",
+  "{name}が元気でいてくれるの、ありがとう",
+  "今日も{name}のご飯係、お疲れさま",
 ];
 
 export default function FeedingPage() {
@@ -63,10 +64,11 @@ export default function FeedingPage() {
   const [cat, setCat] = useState<Cat | null>(null);
   const [foodType, setFoodType] = useState("カリカリ");
   const [amount, setAmount] = useState("");
-  const [fedAt, setFedAt] = useState(format(new Date(), "HH:mm"));
+  const [fedDate, setFedDate] = useState(todayJst());
+  const [fedAt, setFedAt] = useState(nowTimeJst());
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -76,6 +78,8 @@ export default function FeedingPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!cat || !amount) return;
+    const iso = toJstIso(fedDate, fedAt);
+    if (!iso) { setError("日付と時刻を確認してね"); return; }
     setSaving(true);
     setError("");
     try {
@@ -86,13 +90,15 @@ export default function FeedingPage() {
           catId: cat.id,
           foodType,
           amount: Number(amount),
-          fedAt: new Date(`${format(new Date(), "yyyy-MM-dd")}T${fedAt}:00+09:00`).toISOString(),
+          fedAt: iso,
           note,
         }),
       });
       if (res.ok) {
-        setSuccess(true);
-        setTimeout(() => router.push("/"), 1800);
+        setAmount("");
+        setNote("");
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2500);
       } else {
         const d = await res.json();
         setError(d.error ?? "エラーが発生しました");
@@ -104,22 +110,6 @@ export default function FeedingPage() {
     }
   }
 
-  if (success) {
-    const ft = FOOD_TYPES.find((f) => f.key === foodType);
-    return (
-      <div className="min-h-screen bg-canvas flex items-center justify-center">
-        <div className="text-center space-y-4 px-8">
-          <div className="text-6xl animate-bounce">{ft?.emoji ?? "🥣"}</div>
-          <p className="text-lg font-bold text-stone-700">記録したよ！</p>
-          <p className="text-sm text-stone-400 leading-relaxed">
-            {cat?.name ?? "ねこ"}の{foodType}、ちゃんと食べてくれたかな？<br />
-            毎日の積み重ねが大切だよ 🐾
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-canvas pb-24">
       <header className="bg-white border-b border-stone-100 sticky top-0 z-40">
@@ -129,7 +119,7 @@ export default function FeedingPage() {
           </button>
           <div>
             <h1 className="text-base font-bold text-stone-800">{(cat?.name ?? "ねこ")}のごはん</h1>
-            <p className="text-[10px] text-stone-400">{message.replaceAll("たび", cat?.name ?? "たび")}</p>
+            <p className="text-[10px] text-stone-400">{withCatName(message, cat?.name)}</p>
           </div>
         </div>
       </header>
@@ -168,6 +158,7 @@ export default function FeedingPage() {
               </label>
               <input
                 type="number"
+                inputMode="numeric"
                 min={1}
                 max={500}
                 step={1}
@@ -197,18 +188,31 @@ export default function FeedingPage() {
             </div>
           </div>
 
-          {/* 時刻・メモ */}
+          {/* 日時・メモ */}
           <div className="card p-5 space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-stone-400 mb-1.5">時刻</label>
-              <input
-                type="time"
-                step={300}
-                value={fedAt}
-                onChange={(e) => setFedAt(e.target.value)}
-                className="input"
-                required
-              />
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="block text-xs font-semibold text-stone-400 mb-1.5">日付</label>
+                <input
+                  type="date"
+                  max={todayJst()}
+                  value={fedDate}
+                  onChange={(e) => setFedDate(e.target.value)}
+                  className="input"
+                  required
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs font-semibold text-stone-400 mb-1.5">時刻</label>
+                <input
+                  type="time"
+                  step={300}
+                  value={fedAt}
+                  onChange={(e) => setFedAt(e.target.value)}
+                  className="input"
+                  required
+                />
+              </div>
             </div>
             <div>
               <label className="block text-xs font-semibold text-stone-400 mb-1.5">メモ（任意）</label>
@@ -225,6 +229,16 @@ export default function FeedingPage() {
           {error && (
             <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">
               <p className="text-xs text-red-400">{error}</p>
+            </div>
+          )}
+
+          {saved && (
+            <div className="card p-4 flex items-center gap-3">
+              <span className="text-2xl">{FOOD_TYPES.find((f) => f.key === foodType)?.emoji ?? "🥣"}</span>
+              <div>
+                <p className="text-sm font-bold text-stone-700">記録したよ！</p>
+                <p className="text-xs text-stone-400">続けて記録できるよ 🐾</p>
+              </div>
             </div>
           )}
 

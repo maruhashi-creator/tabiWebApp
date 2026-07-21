@@ -18,6 +18,8 @@ export function BottomNav() {
 
   const handleNavigate = (href: string) => {
     if (pathname === href) return;
+    // フェードアウト演出はホームにしかないので、他ページで待つと無反応時間になるだけ
+    if (pathname !== "/") { router.push(href); return; }
     window.dispatchEvent(new Event("page-exit"));
     setTimeout(() => router.push(href), 250);
   };

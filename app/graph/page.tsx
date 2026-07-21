@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { format, subDays } from "date-fns";
+import { catName } from "@/lib/messages";
 
 interface Cat { id: string; name: string }
 interface WeightLog { id: string; weight: number; measuredAt: string }
@@ -43,7 +44,7 @@ export default function GraphPage() {
       <header className="bg-white border-b border-stone-100 sticky top-0 z-40">
         <div className="max-w-lg mx-auto px-4 py-3">
           <h1 className="text-base font-bold text-stone-800">グラフ</h1>
-          <p className="text-[10px] text-stone-400">{cat?.name ?? "たび"}の記録の推移</p>
+          <p className="text-[10px] text-stone-400">{catName(cat?.name)}の記録の推移</p>
         </div>
       </header>
 
@@ -65,7 +66,7 @@ export default function GraphPage() {
 
 function WeightChart({ data }: { data: WeightLog[] }) {
   if (data.length === 0) {
-    return <p className="text-center text-sm text-stone-300 py-8">体重データがありません</p>;
+    return <p className="text-center text-sm text-stone-400 py-8">体重データがありません</p>;
   }
 
   const sorted = [...data]
@@ -125,23 +126,35 @@ function WeightChart({ data }: { data: WeightLog[] }) {
   );
 }
 
+const FOOD_SERIES = [
+  { key: "カリカリ", color: "#F69F9A" },
+  { key: "ウェット", color: "#E9B384" },
+  { key: "ミルク", color: "#9FC5E8" },
+  { key: "おやつ", color: "#F3D9A4" },
+  { key: "その他", color: "#C9BFB2" },
+];
+
 function FeedingChart({ data }: { data: FeedingLog[] }) {
   const days = Array.from({ length: 30 }, (_, i) => {
     const d = subDays(new Date(), 29 - i);
     return format(d, "yyyy-MM-dd");
   });
 
-  const dailyTotals = days.map((day) => ({
-    day,
-    total: data
-      .filter((f) => format(new Date(f.fedAt), "yyyy-MM-dd") === day)
-      .reduce((s, f) => s + f.amount, 0),
-  }));
+  const dailyTotals = days.map((day) => {
+    const ofDay = data.filter((f) => format(new Date(f.fedAt), "yyyy-MM-dd") === day);
+    const byType: Record<string, number> = {};
+    for (const f of ofDay) {
+      const key = FOOD_SERIES.some((s) => s.key === f.foodType) ? f.foodType! : "その他";
+      byType[key] = (byType[key] ?? 0) + f.amount;
+    }
+    return { day, byType, total: ofDay.reduce((s, f) => s + f.amount, 0) };
+  });
 
   const maxTotal = Math.max(...dailyTotals.map((d) => d.total), 1);
+  const usedSeries = FOOD_SERIES.filter((s) => dailyTotals.some((d) => (d.byType[s.key] ?? 0) > 0));
 
   if (dailyTotals.every((d) => d.total === 0)) {
-    return <p className="text-center text-sm text-stone-300 py-8">食事データがありません</p>;
+    return <p className="text-center text-sm text-stone-400 py-8">食事データがありません</p>;
   }
 
   const W = 300, H = 140;
@@ -152,35 +165,55 @@ function FeedingChart({ data }: { data: FeedingLog[] }) {
   const barW = step * 0.65;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
-      {/* grid lines */}
-      {[0, 0.5, 1].map((t, i) => (
-        <line key={i} x1={pL} y1={pT + ph * t} x2={W - pR} y2={pT + ph * t} stroke="#f5f5f4" strokeWidth="1" />
-      ))}
-      {/* bars */}
-      {dailyTotals.map((d, i) => {
-        const barH = (d.total / maxTotal) * ph;
-        const x = pL + i * step + (step - barW) / 2;
-        const y = pT + ph - barH;
-        return (
-          <rect key={i} x={x} y={d.total > 0 ? y : pT + ph - 1} width={barW}
-            height={d.total > 0 ? barH : 1}
-            fill={d.total > 0 ? "#F69F9A" : "#f5f5f4"} rx="1.5" />
-        );
-      })}
-      {/* x-axis labels */}
-      <text x={pL + step * 0.5} y={H - 5} textAnchor="middle" fontSize="8" fill="#a8a29e">
-        {format(new Date(days[0]), "M/d")}
-      </text>
-      <text x={pL + step * 29.5} y={H - 5} textAnchor="end" fontSize="8" fill="#a8a29e">
-        {format(new Date(days[29]), "M/d")}
-      </text>
-      {/* y-axis labels */}
-      <text x={pL - 2} y={pT + 4} textAnchor="end" fontSize="8" fill="#a8a29e">{maxTotal}g</text>
-      <text x={pL - 2} y={pT + ph / 2 + 4} textAnchor="end" fontSize="8" fill="#c7c3bd">
-        {Math.round(maxTotal / 2)}g
-      </text>
-      <text x={pL - 4} y={pT - 4} textAnchor="end" fontSize="8" fill="#c7c3bd">g</text>
-    </svg>
+    <>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
+        {/* grid lines */}
+        {[0, 0.5, 1].map((t, i) => (
+          <line key={i} x1={pL} y1={pT + ph * t} x2={W - pR} y2={pT + ph * t} stroke="#f5f5f4" strokeWidth="1" />
+        ))}
+        {/* stacked bars */}
+        {dailyTotals.map((d, i) => {
+          const x = pL + i * step + (step - barW) / 2;
+          if (d.total === 0) {
+            return <rect key={i} x={x} y={pT + ph - 1} width={barW} height={1} fill="#f5f5f4" rx="1.5" />;
+          }
+          let cursor = pT + ph;
+          return (
+            <g key={i}>
+              {usedSeries.map((s) => {
+                const v = d.byType[s.key] ?? 0;
+                if (v === 0) return null;
+                const h = (v / maxTotal) * ph;
+                cursor -= h;
+                return <rect key={s.key} x={x} y={cursor} width={barW} height={h} fill={s.color} />;
+              })}
+            </g>
+          );
+        })}
+        {/* x-axis labels */}
+        <text x={pL + step * 0.5} y={H - 5} textAnchor="middle" fontSize="8" fill="#a8a29e">
+          {format(new Date(days[0]), "M/d")}
+        </text>
+        <text x={pL + step * 29.5} y={H - 5} textAnchor="end" fontSize="8" fill="#a8a29e">
+          {format(new Date(days[29]), "M/d")}
+        </text>
+        {/* y-axis labels */}
+        <text x={pL - 2} y={pT + 4} textAnchor="end" fontSize="8" fill="#a8a29e">{maxTotal}</text>
+        <text x={pL - 2} y={pT + ph / 2 + 4} textAnchor="end" fontSize="8" fill="#c7c3bd">
+          {Math.round(maxTotal / 2)}
+        </text>
+        <text x={pL - 4} y={pT - 4} textAnchor="end" fontSize="8" fill="#c7c3bd">g / ml</text>
+      </svg>
+
+      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 px-1">
+        {usedSeries.map((s) => (
+          <div key={s.key} className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+            <span className="text-[10px] text-stone-500">{s.key}</span>
+          </div>
+        ))}
+      </div>
+      <p className="text-[10px] text-stone-400 mt-1.5 px-1">※ ミルクの ml も同じ軸に積んでいます</p>
+    </>
   );
 }

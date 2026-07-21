@@ -27,6 +27,10 @@
     box-sizing: border-box;
   }
 
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
   input[type="time"].input,
   input[type="date"].input {
     min-width: 0;

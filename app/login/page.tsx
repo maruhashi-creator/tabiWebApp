@@ -248,7 +248,7 @@ export default function LoginPage() {
           <>
             <div className="relative flex items-center pt-2">
               <div className="flex-1 border-t border-stone-100" />
-              <span className="px-3 text-xs text-stone-300">または</span>
+              <span className="px-3 text-xs text-stone-400">または</span>
               <div className="flex-1 border-t border-stone-100" />
             </div>
 
@@ -264,7 +264,7 @@ export default function LoginPage() {
         )}
       </div>
 
-      <p className="text-xs text-stone-300 mt-8">愛するねこと一緒に、毎日を大切に 🐾</p>
+      <p className="text-xs text-stone-400 mt-8">愛するねこと一緒に、毎日を大切に 🐾</p>
     </div>
   );
 }

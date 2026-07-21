@@ -6,10 +6,11 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { guardCatOwnership } from "@/lib/cat-auth";
+import { isValidDateString } from "@/lib/datetime";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return Response.json({ error: "ログインしてね" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
   const date = searchParams.get("date");
@@ -44,7 +45,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return Response.json({ error: "ログインしてね" }, { status: 401 });
 
   const body = await req.json();
   const { catId, amount, fedAt, note, foodType } = body as {
@@ -56,10 +57,14 @@ export async function POST(req: NextRequest) {
   };
 
   if (!catId || !fedAt) {
-    return Response.json({ error: "catId, amount, fedAt は必須です" }, { status: 400 });
+    return Response.json({ error: "ごはんの量と日時を入力してね" }, { status: 400 });
   }
   if (typeof amount !== "number" || amount <= 0 || !isFinite(amount)) {
-    return Response.json({ error: "amount は正の数値で入力してください" }, { status: 400 });
+    return Response.json({ error: "量は数字で入力してね" }, { status: 400 });
+  }
+
+  if (!isValidDateString(fedAt)) {
+    return Response.json({ error: "日付と時刻を確認してね" }, { status: 400 });
   }
 
   const guard = await guardCatOwnership(catId, session.user.id);
@@ -81,11 +86,11 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return Response.json({ error: "ログインしてね" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
-  if (!id) return Response.json({ error: "id is required" }, { status: 400 });
+  if (!id) return Response.json({ error: "記録が見つからなかったよ" }, { status: 400 });
 
   const { amount, fedAt, note, foodType } = await req.json() as {
     amount?: number;
@@ -95,12 +100,16 @@ export async function PATCH(req: NextRequest) {
   };
 
   if (amount !== undefined && (typeof amount !== "number" || amount <= 0 || !isFinite(amount))) {
-    return Response.json({ error: "amount は正の数値で入力してください" }, { status: 400 });
+    return Response.json({ error: "量は数字で入力してね" }, { status: 400 });
+  }
+
+  if (fedAt !== undefined && !isValidDateString(fedAt)) {
+    return Response.json({ error: "日付と時刻を確認してね" }, { status: 400 });
   }
 
   try {
     const log = await prisma.feedingLog.update({
-      where: { id, userId: session.user.id },
+      where: { id, cat: { users: { some: { id: session.user.id } } } },
       data: {
         ...(amount !== undefined && { amount }),
         ...(fedAt !== undefined && { fedAt: new Date(fedAt) }),
@@ -112,7 +121,7 @@ export async function PATCH(req: NextRequest) {
     return Response.json(log);
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
-      return Response.json({ error: "Forbidden" }, { status: 403 });
+      return Response.json({ error: "このねこの記録にはアクセスできないよ" }, { status: 403 });
     }
     throw e;
   }
@@ -120,18 +129,18 @@ export async function PATCH(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return Response.json({ error: "ログインしてね" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
-  if (!id) return Response.json({ error: "id is required" }, { status: 400 });
+  if (!id) return Response.json({ error: "記録が見つからなかったよ" }, { status: 400 });
 
   try {
-    await prisma.feedingLog.delete({ where: { id, userId: session.user.id } });
+    await prisma.feedingLog.delete({ where: { id, cat: { users: { some: { id: session.user.id } } } } });
     return Response.json({ ok: true });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
-      return Response.json({ error: "Forbidden" }, { status: 403 });
+      return Response.json({ error: "このねこの記録にはアクセスできないよ" }, { status: 403 });
     }
     throw e;
   }

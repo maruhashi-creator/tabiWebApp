@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
+import { toJstIso, todayJst, nowTimeJst } from "@/lib/datetime";
+import NoCatNotice from "@/components/NoCatNotice";
+import Link from "next/link";
 
 interface Cat { id: string; name: string }
 type Tab = "feeding" | "toilet" | "weight" | "care";
@@ -16,12 +19,18 @@ const TABS: { key: Tab; emoji: string; label: string }[] = [
 export default function RecordPage() {
   const [tab, setTab] = useState<Tab>("feeding");
   const [cat, setCat] = useState<Cat | null>(null);
+  const [catLoading, setCatLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/cat").then((r) => r.json()).then((cats) => setCat(cats[0] ?? null)).catch(() => {});
+    fetch("/api/cat")
+      .then((r) => r.json())
+      .then((cats) => setCat(cats[0] ?? null))
+      .catch(() => {})
+      .finally(() => setCatLoading(false));
   }, []);
 
-  if (!cat) return <div className="min-h-screen bg-canvas" />;
+  if (catLoading) return <div className="min-h-screen bg-canvas" />;
+  if (!cat) return <NoCatNotice />;
 
   return (
     <div className="min-h-screen bg-canvas pb-24">
@@ -81,7 +90,8 @@ function getPresets(foodType: string) {
 function FeedingForm({ cat }: { cat: Cat }) {
   const [foodType, setFoodType] = useState("カリカリ");
   const [amount, setAmount] = useState("");
-  const [fedAt, setFedAt] = useState(format(new Date(), "HH:mm"));
+  const [fedDate, setFedDate] = useState(todayJst());
+  const [fedAt, setFedAt] = useState(nowTimeJst());
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -90,6 +100,8 @@ function FeedingForm({ cat }: { cat: Cat }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!amount) return;
+    const iso = toJstIso(fedDate, fedAt);
+    if (!iso) { setError("日付と時刻を確認してね"); return; }
     setSaving(true);
     setError("");
     try {
@@ -100,7 +112,7 @@ function FeedingForm({ cat }: { cat: Cat }) {
           catId: cat.id,
           foodType,
           amount: Number(amount),
-          fedAt: new Date(`${format(new Date(), "yyyy-MM-dd")}T${fedAt}:00+09:00`).toISOString(),
+          fedAt: iso,
           note,
         }),
       });
@@ -146,7 +158,7 @@ function FeedingForm({ cat }: { cat: Cat }) {
           給餌量（{foodType === "ミルク" ? "ml" : "g"}）
         </label>
         <input
-          type="number" min={1} max={500} step={1} value={amount}
+          type="number" inputMode="numeric" min={1} max={500} step={1} value={amount}
           onChange={(e) => setAmount(e.target.value)}
           placeholder="0"
           className="w-full border-0 bg-stone-50 rounded-2xl px-4 py-4 text-4xl font-bold text-center text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-300 placeholder-stone-200"
@@ -164,9 +176,15 @@ function FeedingForm({ cat }: { cat: Cat }) {
       </div>
 
       <div className="card p-5 space-y-4">
-        <div>
-          <label className="block text-xs font-semibold text-stone-400 mb-1.5">時刻</label>
-          <input type="time" step={300} value={fedAt} onChange={(e) => setFedAt(e.target.value)} className="input" required />
+        <div className="flex gap-3">
+          <div className="flex-1">
+            <label className="block text-xs font-semibold text-stone-400 mb-1.5">日付</label>
+            <input type="date" max={todayJst()} value={fedDate} onChange={(e) => setFedDate(e.target.value)} className="input" required />
+          </div>
+          <div className="flex-1">
+            <label className="block text-xs font-semibold text-stone-400 mb-1.5">時刻</label>
+            <input type="time" step={300} value={fedAt} onChange={(e) => setFedAt(e.target.value)} className="input" required />
+          </div>
         </div>
         <div>
           <label className="block text-xs font-semibold text-stone-400 mb-1.5">メモ（任意）</label>
@@ -186,13 +204,16 @@ function ToiletForm({ cat }: { cat: Cat }) {
   const [type, setType] = useState<"URINE" | "FECES">("URINE");
   const [count, setCount] = useState(1);
   const [condition, setCondition] = useState("");
-  const [loggedAt, setLoggedAt] = useState(format(new Date(), "HH:mm"));
+  const [loggedDate, setLoggedDate] = useState(todayJst());
+  const [loggedAt, setLoggedAt] = useState(nowTimeJst());
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const iso = toJstIso(loggedDate, loggedAt);
+    if (!iso) { setError("日付と時刻を確認してね"); return; }
     setSaving(true);
     setError("");
     try {
@@ -201,7 +222,7 @@ function ToiletForm({ cat }: { cat: Cat }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           catId: cat.id, type, count, condition,
-          loggedAt: new Date(`${format(new Date(), "yyyy-MM-dd")}T${loggedAt}:00+09:00`).toISOString(),
+          loggedAt: iso,
         }),
       });
       if (res.ok) {
@@ -246,13 +267,19 @@ function ToiletForm({ cat }: { cat: Cat }) {
           <button type="button" onClick={() => setCount((c) => c + 1)}
             className="w-12 h-12 rounded-full bg-stone-100 text-stone-600 text-xl font-bold hover:bg-stone-200 transition-colors active:scale-95 transform flex items-center justify-center">＋</button>
         </div>
-        <p className="text-center text-xs text-stone-300 mt-2">回</p>
+        <p className="text-center text-xs text-stone-400 mt-2">回</p>
       </div>
 
       <div className="card p-5 space-y-4">
-        <div>
-          <label className="block text-xs font-semibold text-stone-400 mb-1.5">時刻</label>
-          <input type="time" step={300} value={loggedAt} onChange={(e) => setLoggedAt(e.target.value)} className="input" required />
+        <div className="flex gap-3">
+          <div className="flex-1">
+            <label className="block text-xs font-semibold text-stone-400 mb-1.5">日付</label>
+            <input type="date" max={todayJst()} value={loggedDate} onChange={(e) => setLoggedDate(e.target.value)} className="input" required />
+          </div>
+          <div className="flex-1">
+            <label className="block text-xs font-semibold text-stone-400 mb-1.5">時刻</label>
+            <input type="time" step={300} value={loggedAt} onChange={(e) => setLoggedAt(e.target.value)} className="input" required />
+          </div>
         </div>
         <div>
           <label className="block text-xs font-semibold text-stone-400 mb-1.5">状態メモ（任意）</label>
@@ -270,7 +297,8 @@ function ToiletForm({ cat }: { cat: Cat }) {
 
 function WeightForm({ cat }: { cat: Cat }) {
   const [weight, setWeight] = useState("");
-  const [measuredAt, setMeasuredAt] = useState(format(new Date(), "HH:mm"));
+  const [measuredDate, setMeasuredDate] = useState(todayJst());
+  const [measuredAt, setMeasuredAt] = useState(nowTimeJst());
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -278,6 +306,8 @@ function WeightForm({ cat }: { cat: Cat }) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const iso = toJstIso(measuredDate, measuredAt);
+    if (!iso) { setError("日付と時刻を確認してね"); return; }
     setSaving(true);
     setError("");
     try {
@@ -286,7 +316,7 @@ function WeightForm({ cat }: { cat: Cat }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           catId: cat.id, weight: Number(weight),
-          measuredAt: new Date(`${format(new Date(), "yyyy-MM-dd")}T${measuredAt}:00+09:00`).toISOString(),
+          measuredAt: iso,
           note,
         }),
       });
@@ -311,19 +341,25 @@ function WeightForm({ cat }: { cat: Cat }) {
       <div className="card p-5">
         <label className="block text-xs font-semibold text-stone-400 mb-3 text-center">体重（kg）</label>
         <input
-          type="number" min={0.1} max={20} step={0.01} value={weight}
+          type="number" inputMode="decimal" min={0.1} max={20} step={0.01} value={weight}
           onChange={(e) => setWeight(e.target.value)}
           placeholder="0.00"
           className="w-full border-0 bg-stone-50 rounded-2xl px-4 py-4 text-4xl font-bold text-center text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-300 placeholder-stone-200"
           required autoFocus
         />
-        <p className="text-center text-xs text-stone-300 mt-2">kg</p>
+        <p className="text-center text-xs text-stone-400 mt-2">kg</p>
       </div>
 
       <div className="card p-5 space-y-4">
-        <div>
-          <label className="block text-xs font-semibold text-stone-400 mb-1.5">計測時刻</label>
-          <input type="time" step={300} value={measuredAt} onChange={(e) => setMeasuredAt(e.target.value)} className="input" required />
+        <div className="flex gap-3">
+          <div className="flex-1">
+            <label className="block text-xs font-semibold text-stone-400 mb-1.5">計測日</label>
+            <input type="date" max={todayJst()} value={measuredDate} onChange={(e) => setMeasuredDate(e.target.value)} className="input" required />
+          </div>
+          <div className="flex-1">
+            <label className="block text-xs font-semibold text-stone-400 mb-1.5">計測時刻</label>
+            <input type="time" step={300} value={measuredAt} onChange={(e) => setMeasuredAt(e.target.value)} className="input" required />
+          </div>
         </div>
         <div>
           <label className="block text-xs font-semibold text-stone-400 mb-1.5">メモ（任意）</label>
@@ -395,7 +431,8 @@ function CareForm({ cat }: { cat: Cat }) {
   const [medOpen, setMedOpen] = useState(false);
   const [medName, setMedName] = useState("");
   const [medDosage, setMedDosage] = useState("");
-  const [medGivenAt, setMedGivenAt] = useState(format(new Date(), "HH:mm"));
+  const [medGivenDate, setMedGivenDate] = useState(todayJst());
+  const [medGivenAt, setMedGivenAt] = useState(nowTimeJst());
   const [medSaving, setMedSaving] = useState(false);
   const [medJustDone, setMedJustDone] = useState(false);
   const [lastMed, setLastMed] = useState<{ name: string; givenAt: string } | null>(null);
@@ -420,6 +457,8 @@ function CareForm({ cat }: { cat: Cat }) {
 
   async function recordMedication() {
     if (medSaving || !medName) return;
+    const iso = toJstIso(medGivenDate, medGivenAt);
+    if (!iso) { alert("投薬日と時刻を確認してね"); return; }
     setMedSaving(true);
     try {
       const res = await fetch("/api/medication", {
@@ -429,7 +468,7 @@ function CareForm({ cat }: { cat: Cat }) {
           catId: cat.id,
           name: medName,
           dosage: medDosage || undefined,
-          givenAt: new Date(`${format(new Date(), "yyyy-MM-dd")}T${medGivenAt}:00+09:00`).toISOString(),
+          givenAt: iso,
         }),
       });
       if (res.ok) {
@@ -502,7 +541,7 @@ function CareForm({ cat }: { cat: Cat }) {
               <button
                 onClick={() => record(item.key)}
                 disabled={recording[item.key]}
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all active:scale-95 flex-shrink-0 ${
+                className={`relative w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all active:scale-95 flex-shrink-0 after:absolute after:content-[''] after:-inset-1.5 ${
                   done
                     ? "bg-emerald-100 text-emerald-500"
                     : "bg-stone-100 text-stone-500 hover:bg-stone-200"
@@ -533,11 +572,14 @@ function CareForm({ cat }: { cat: Cat }) {
             <span className="text-xl w-7 text-center">💊</span>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-stone-700">お薬</p>
-              <p className="text-xs text-stone-400">{medLastText}</p>
+              <p className="text-xs text-stone-400">
+                {medLastText}
+                <Link href="/medication" className="text-primary ml-2 hover:underline">履歴を見る</Link>
+              </p>
             </div>
             <button
               onClick={() => setMedOpen((p) => !p)}
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all active:scale-95 flex-shrink-0 ${
+              className={`relative w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all active:scale-95 flex-shrink-0 after:absolute after:content-[''] after:-inset-1.5 ${
                 medJustDone
                   ? "bg-emerald-100 text-emerald-500"
                   : "bg-stone-100 text-stone-500 hover:bg-stone-200"
@@ -569,15 +611,27 @@ function CareForm({ cat }: { cat: Cat }) {
                   className="input"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-stone-400 mb-1">投薬時刻</label>
-                <input
-                  type="time"
-                  step={300}
-                  value={medGivenAt}
-                  onChange={(e) => setMedGivenAt(e.target.value)}
-                  className="input"
-                />
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-xs font-semibold text-stone-400 mb-1">投薬日</label>
+                  <input
+                    type="date"
+                    max={todayJst()}
+                    value={medGivenDate}
+                    onChange={(e) => setMedGivenDate(e.target.value)}
+                    className="input"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs font-semibold text-stone-400 mb-1">投薬時刻</label>
+                  <input
+                    type="time"
+                    step={300}
+                    value={medGivenAt}
+                    onChange={(e) => setMedGivenAt(e.target.value)}
+                    className="input"
+                  />
+                </div>
               </div>
               <button
                 onClick={recordMedication}

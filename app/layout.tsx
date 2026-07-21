@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -10,12 +10,6 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 export const metadata: Metadata = {
   title: "たびの健康手帳",
   description: "愛猫たびの健康管理アプリ",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
   icons: {
     apple: "/apple-touch-icon.png",
     icon: "/favicon.png",
@@ -25,7 +19,15 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "たびの健康手帳",
   },
+  // apple-mobile-web-app-capable alone is deprecated; browsers now expect this name
+  other: { "mobile-web-app-capable": "yes" },
   manifest: "/manifest.json",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -38,17 +40,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>{children}</Providers>
         <BottomNav />
         <SpeedInsights />
-        <script dangerouslySetInnerHTML={{ __html: `
-          document.addEventListener('touchmove', function(e) {
-            if (e.touches.length > 1) e.preventDefault();
-          }, { passive: false });
-          document.addEventListener('focusout', function() {
-            var viewport = document.querySelector('meta[name=viewport]');
-            if (viewport) {
-              viewport.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no');
-            }
-          });
-        `}} />
       </body>
     </html>
   );

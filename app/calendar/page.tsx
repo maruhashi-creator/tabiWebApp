@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths, isToday } from "date-fns";
 import { ja } from "date-fns/locale";
+import NoCatNotice from "@/components/NoCatNotice";
+import { catName } from "@/lib/messages";
 
 interface Cat { id: string; name: string }
 interface FeedingLog { id: string; amount: number; foodType: string | null; fedAt: string; note?: string | null; user: { name: string } }
@@ -31,10 +33,15 @@ export default function CalendarPage() {
   const [medications, setMedications] = useState<MedicationLog[]>([]);
   const [cares, setCares] = useState<CareLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [catLoading, setCatLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/cat").then((r) => r.json()).then((cats) => setCat(cats[0] ?? null)).catch(() => {});
+    fetch("/api/cat")
+      .then((r) => r.json())
+      .then((cats) => setCat(cats[0] ?? null))
+      .catch(() => {})
+      .finally(() => setCatLoading(false));
   }, []);
 
   useEffect(() => {
@@ -46,8 +53,8 @@ export default function CalendarPage() {
     Promise.all([
       fetch(`/api/feeding?catId=${cat.id}&from=${from}&to=${to}`).then((r) => r.json()).catch(() => []),
       fetch(`/api/toilet?catId=${cat.id}&from=${from}&to=${to}`).then((r) => r.json()).catch(() => []),
-      fetch(`/api/weight?catId=${cat.id}&limit=200`).then((r) => r.json()).catch(() => []),
-      fetch(`/api/medication?catId=${cat.id}&limit=200`).then((r) => r.json()).catch(() => []),
+      fetch(`/api/weight?catId=${cat.id}&from=${from}&to=${to}`).then((r) => r.json()).catch(() => []),
+      fetch(`/api/medication?catId=${cat.id}&from=${from}&to=${to}`).then((r) => r.json()).catch(() => []),
       fetch(`/api/care?catId=${cat.id}&from=${from}&to=${to}`).then((r) => r.json()).catch(() => []),
     ]).then(([f, t, w, m, c]) => {
       const safeF: FeedingLog[] = Array.isArray(f) ? f : [];
@@ -97,6 +104,8 @@ export default function CalendarPage() {
     else if (type === "care") setCares((p) => p.map((x) => x.id === updated.id ? updated as CareLog : x));
   }, []);
 
+  if (catLoading) return <div className="min-h-screen bg-canvas" />;
+  if (!cat) return <NoCatNotice />;
   if (loading) return <div className="min-h-screen bg-canvas" />;
 
   const days = eachDayOfInterval({ start: startOfMonth(month), end: endOfMonth(month) });
@@ -110,7 +119,7 @@ export default function CalendarPage() {
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
           <div>
             <h1 className="text-base font-bold text-stone-800">カレンダー</h1>
-            <p className="text-[10px] text-stone-400">{cat?.name ?? "たび"}の記録カレンダー</p>
+            <p className="text-[10px] text-stone-400">{catName(cat?.name)}の記録カレンダー</p>
           </div>
           <div className="flex items-center gap-3">
             <button onClick={() => setMonth((m) => subMonths(m, 1))}
@@ -212,7 +221,35 @@ export default function CalendarPage() {
 
 function buildTimestamp(originalIso: string, timeStr: string): string {
   const date = format(new Date(originalIso), "yyyy-MM-dd");
-  return new Date(`${date}T${timeStr}:00.000+09:00`).toISOString();
+  const d = new Date(`${date}T${timeStr}:00.000+09:00`);
+  return isNaN(d.getTime()) ? "" : d.toISOString();
+}
+
+// 編集フォームは <form> 外の button なので min/max が効かない。送信前に自前で範囲を見る
+const EDIT_RANGES: Record<string, { min: number; max: number; label: string; unit: string }> = {
+  amount: { min: 0.1, max: 2000, label: "量", unit: "g/ml" },
+  count: { min: 1, max: 20, label: "回数", unit: "回" },
+  weight: { min: 0.01, max: 30, label: "体重", unit: "kg" },
+};
+
+function validateEdit(body: Record<string, unknown>): string | null {
+  for (const [key, value] of Object.entries(body)) {
+    if (key.endsWith("At")) {
+      if (typeof value !== "string" || value === "") return "時刻を入力してね";
+      continue;
+    }
+    if (key === "name") {
+      if (typeof value !== "string" || value.trim() === "") return "薬の名前を入力してね";
+      continue;
+    }
+    const range = EDIT_RANGES[key];
+    if (!range) continue;
+    if (typeof value !== "number" || !isFinite(value)) return `${range.label}を入力してね`;
+    if (value < range.min || value > range.max) {
+      return `${range.label}は ${range.min}〜${range.max}${range.unit} の範囲で入力してね`;
+    }
+  }
+  return null;
 }
 
 function foodEmoji(foodType: string | null) {
@@ -242,6 +279,7 @@ function DaySheet({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFields, setEditFields] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") { setEditingId(null); onClose(); } };
@@ -271,10 +309,15 @@ function DaySheet({
   function startEdit(id: string, fields: Record<string, string>) {
     setEditingId(id);
     setEditFields(fields);
+    setEditError(null);
   }
 
   async function saveEdit(apiType: string, id: string, body: Record<string, unknown>) {
+    const invalid = validateEdit(body);
+    if (invalid) { setEditError(invalid); return; }
+
     setSaving(true);
+    setEditError(null);
     try {
       const res = await fetch(`/api/${apiType}?id=${id}`, {
         method: "PATCH",
@@ -285,7 +328,12 @@ function DaySheet({
         const updated = await res.json();
         onUpdate(apiType, updated);
         setEditingId(null);
+      } else {
+        const d = await res.json().catch(() => null);
+        setEditError(d?.error ?? "保存できませんでした");
       }
+    } catch {
+      setEditError("通信エラーが発生しました");
     } finally {
       setSaving(false);
     }
@@ -295,32 +343,36 @@ function DaySheet({
     if (!confirm("この記録を削除しますか？")) return;
     const res = await fetch(`/api/${apiType}?id=${id}`, { method: "DELETE" });
     if (res.ok) onDelete(apiType, id);
+    else alert("記録を削除できませんでした。時間をおいて試してみてね");
   }
 
   const actionButtons = (apiType: string, id: string, onEdit: () => void) => (
     <div className="flex items-center gap-1 ml-1 shrink-0">
       <button
         onClick={onEdit}
-        className="w-7 h-7 flex items-center justify-center text-stone-300 hover:text-stone-500 transition-colors text-sm"
+        className="w-11 h-11 flex items-center justify-center text-stone-500 hover:text-stone-700 transition-colors text-sm"
         aria-label="編集"
       >✏</button>
       <button
         onClick={() => doDelete(apiType, id)}
-        className="w-7 h-7 flex items-center justify-center text-stone-300 hover:text-red-400 transition-colors text-lg leading-none"
+        className="w-11 h-11 flex items-center justify-center text-stone-500 hover:text-red-500 transition-colors text-lg leading-none"
         aria-label="削除"
       >×</button>
     </div>
   );
 
   const editActions = (onSave: () => void) => (
-    <div className="flex gap-2 mt-2 pl-10">
-      <button
-        onClick={onSave}
-        disabled={saving}
-        className="text-xs bg-primary text-white px-3 py-1 rounded-full disabled:opacity-50"
-      >保存</button>
-      <button onClick={() => setEditingId(null)} className="text-xs text-stone-400 px-3 py-1">キャンセル</button>
-    </div>
+    <>
+      {editError && <p className="text-xs text-red-500 mt-2 pl-10">{editError}</p>}
+      <div className="flex gap-2 mt-2 pl-10">
+        <button
+          onClick={onSave}
+          disabled={saving}
+          className="text-xs bg-primary text-white px-3 py-1 rounded-full disabled:opacity-50"
+        >保存</button>
+        <button onClick={() => { setEditingId(null); setEditError(null); }} className="text-xs text-stone-400 px-3 py-1">キャンセル</button>
+      </div>
+    </>
   );
 
   const inputCls = "border border-stone-200 rounded-lg px-2 py-1 text-sm text-stone-700 bg-white focus:outline-none focus:border-primary";
@@ -328,13 +380,13 @@ function DaySheet({
   return (
     <>
       <div
-        className={`fixed inset-0 bg-black/20 z-40 transition-opacity ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        className={`fixed inset-0 bg-black/20 z-[55] transition-opacity ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
         onClick={() => { setEditingId(null); onClose(); }}
       />
 
       <div
         ref={sheetRef}
-        className={`fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-xl transition-transform duration-300 ${
+        className={`fixed bottom-0 left-0 right-0 z-[60] bg-white rounded-t-2xl shadow-xl transition-transform duration-300 ${
           open ? "translate-y-0" : "translate-y-full"
         }`}
         style={{ maxHeight: "70vh" }}
@@ -345,12 +397,12 @@ function DaySheet({
 
         <div className="px-5 py-3 flex items-center justify-between border-b border-stone-100">
           <p className="text-sm font-bold text-stone-800">{dateLabel}</p>
-          <button onClick={() => { setEditingId(null); onClose(); }} className="text-stone-300 hover:text-stone-500 transition-colors text-xl leading-none">×</button>
+          <button onClick={() => { setEditingId(null); onClose(); }} aria-label="閉じる" className="w-11 h-11 -m-2 flex items-center justify-center text-stone-500 hover:text-stone-700 transition-colors text-xl leading-none">×</button>
         </div>
 
-        <div className="overflow-y-auto" style={{ maxHeight: "calc(70vh - 80px)" }}>
+        <div className="overflow-y-auto pb-[72px]" style={{ maxHeight: "calc(70vh - 80px)" }}>
           {dayFeedings.length === 0 && dayToilets.length === 0 && dayWeights.length === 0 && dayMeds.length === 0 && dayCares.length === 0 ? (
-            <p className="text-center text-sm text-stone-300 py-10">この日の記録はありません</p>
+            <p className="text-center text-sm text-stone-400 py-10">この日の記録はありません</p>
           ) : (() => {
             // サマリー計算
             const feedingGrouped: Record<string, number> = {};
@@ -448,7 +500,7 @@ function DaySheet({
                             <div>
                               <div className="flex items-center gap-2">
                                 <span className="text-xl w-7 text-center">{foodEmoji(f.foodType)}</span>
-                                <input type="number" min="0.1" step="0.1" value={editFields.amount ?? ""}
+                                <input type="number" inputMode="decimal" min="0.1" step="0.1" value={editFields.amount ?? ""}
                                   onChange={(e) => setEditFields((p) => ({ ...p, amount: e.target.value }))}
                                   className={`w-20 ${inputCls}`} />
                                 <span className="text-xs text-stone-400">{f.foodType === "ミルク" ? "ml" : "g"}</span>
@@ -491,7 +543,7 @@ function DaySheet({
                             <div>
                               <div className="flex items-center gap-2">
                                 <span className="text-xl w-7 text-center">{t.type === "URINE" ? "💧" : "🌼"}</span>
-                                <input type="number" min="1" step="1" value={editFields.count ?? ""}
+                                <input type="number" inputMode="numeric" min="1" step="1" value={editFields.count ?? ""}
                                   onChange={(e) => setEditFields((p) => ({ ...p, count: e.target.value }))}
                                   className={`w-16 ${inputCls}`} />
                                 <span className="text-xs text-stone-400">回</span>
@@ -532,7 +584,7 @@ function DaySheet({
                             <div>
                               <div className="flex items-center gap-2">
                                 <span className="text-xl w-7 text-center">⚖️</span>
-                                <input type="number" min="0.01" step="0.01" value={editFields.weight ?? ""}
+                                <input type="number" inputMode="decimal" min="0.01" step="0.01" value={editFields.weight ?? ""}
                                   onChange={(e) => setEditFields((p) => ({ ...p, weight: e.target.value }))}
                                   className={`w-20 ${inputCls}`} />
                                 <span className="text-xs text-stone-400">kg</span>

@@ -227,12 +227,13 @@ function buildTimestamp(originalIso: string, timeStr: string): string {
 
 // 編集フォームは <form> 外の button なので min/max が効かない。送信前に自前で範囲を見る
 const EDIT_RANGES: Record<string, { min: number; max: number; label: string; unit: string }> = {
-  amount: { min: 0.1, max: 2000, label: "量", unit: "g/ml" },
+  amount: { min: 0.1, max: 2000, label: "量", unit: "g" },
   count: { min: 1, max: 20, label: "回数", unit: "回" },
   weight: { min: 0.01, max: 30, label: "体重", unit: "kg" },
 };
 
-function validateEdit(body: Record<string, unknown>): string | null {
+// unitOverrides lets the feeding form say "ml" for milk instead of the default "g"
+function validateEdit(body: Record<string, unknown>, unitOverrides?: Record<string, string>): string | null {
   for (const [key, value] of Object.entries(body)) {
     if (key.endsWith("At")) {
       if (typeof value !== "string" || value === "") return "時刻を入力してね";
@@ -246,7 +247,8 @@ function validateEdit(body: Record<string, unknown>): string | null {
     if (!range) continue;
     if (typeof value !== "number" || !isFinite(value)) return `${range.label}を入力してね`;
     if (value < range.min || value > range.max) {
-      return `${range.label}は ${range.min}〜${range.max}${range.unit} の範囲で入力してね`;
+      const unit = unitOverrides?.[key] ?? range.unit;
+      return `${range.label}は ${range.min}〜${range.max}${unit} の範囲で入力してね`;
     }
   }
   return null;
@@ -312,8 +314,8 @@ function DaySheet({
     setEditError(null);
   }
 
-  async function saveEdit(apiType: string, id: string, body: Record<string, unknown>) {
-    const invalid = validateEdit(body);
+  async function saveEdit(apiType: string, id: string, body: Record<string, unknown>, unitOverrides?: Record<string, string>) {
+    const invalid = validateEdit(body, unitOverrides);
     if (invalid) { setEditError(invalid); return; }
 
     setSaving(true);
@@ -511,7 +513,7 @@ function DaySheet({
                               {editActions(() => saveEdit("feeding", f.id, {
                                 amount: parseFloat(editFields.amount),
                                 fedAt: buildTimestamp(f.fedAt, editFields.time),
-                              }))}
+                              }, f.foodType === "ミルク" ? { amount: "ml" } : undefined))}
                             </div>
                           ) : (
                             <div className="flex items-center gap-3">

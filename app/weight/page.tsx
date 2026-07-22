@@ -131,7 +131,7 @@ export default function WeightPage() {
           </div>
 
           <div className="card p-5 space-y-4">
-            <div className="flex gap-3">
+            <div className="grid grid-cols-[1.4fr_1fr] gap-3">
               <div className="flex-1">
                 <label className="block text-xs font-semibold text-stone-400 mb-1.5">計測日</label>
                 <input

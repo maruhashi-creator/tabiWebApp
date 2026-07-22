@@ -36,6 +36,11 @@
     min-width: 0;
     max-width: 100%;
     width: 100%;
+    /* 16px font (forced below to avoid iOS zoom) leaves too little room for the
+       native date UI in a half-width column; trim side padding to fit at 375px */
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    text-align: center;
   }
 }
 

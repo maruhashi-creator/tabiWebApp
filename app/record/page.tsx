@@ -177,7 +177,7 @@ function FeedingForm({ cat }: { cat: Cat }) {
       </div>
 
       <div className="card p-5 space-y-4">
-        <div className="grid grid-cols-[1.4fr_1fr] gap-3">
+        <div className="grid grid-cols-[1.4fr_1fr] gap-3 [&>*]:min-w-0">
           <div className="flex-1">
             <label className="block text-xs font-semibold text-stone-400 mb-1.5">日付</label>
             <input type="date" max={todayJst()} value={fedDate} onChange={(e) => setFedDate(e.target.value)} className="input" required />
@@ -272,7 +272,7 @@ function ToiletForm({ cat }: { cat: Cat }) {
       </div>
 
       <div className="card p-5 space-y-4">
-        <div className="grid grid-cols-[1.4fr_1fr] gap-3">
+        <div className="grid grid-cols-[1.4fr_1fr] gap-3 [&>*]:min-w-0">
           <div className="flex-1">
             <label className="block text-xs font-semibold text-stone-400 mb-1.5">日付</label>
             <input type="date" max={todayJst()} value={loggedDate} onChange={(e) => setLoggedDate(e.target.value)} className="input" required />
@@ -352,7 +352,7 @@ function WeightForm({ cat }: { cat: Cat }) {
       </div>
 
       <div className="card p-5 space-y-4">
-        <div className="grid grid-cols-[1.4fr_1fr] gap-3">
+        <div className="grid grid-cols-[1.4fr_1fr] gap-3 [&>*]:min-w-0">
           <div className="flex-1">
             <label className="block text-xs font-semibold text-stone-400 mb-1.5">計測日</label>
             <input type="date" max={todayJst()} value={measuredDate} onChange={(e) => setMeasuredDate(e.target.value)} className="input" required />
@@ -585,7 +585,7 @@ function CareForm({ cat }: { cat: Cat }) {
                   className="input"
                 />
               </div>
-              <div className="grid grid-cols-[1.4fr_1fr] gap-3">
+              <div className="grid grid-cols-[1.4fr_1fr] gap-3 [&>*]:min-w-0">
                 <div className="flex-1">
                   <label className="block text-xs font-semibold text-stone-400 mb-1">投薬日</label>
                   <input

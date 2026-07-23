@@ -155,7 +155,7 @@ export default function ToiletPage() {
 
           {/* 日時・メモ */}
           <div className="card p-5 space-y-4">
-            <div className="grid grid-cols-[1.4fr_1fr] gap-3">
+            <div className="grid grid-cols-[1.4fr_1fr] gap-3 [&>*]:min-w-0">
               <div className="flex-1">
                 <label className="block text-xs font-semibold text-stone-400 mb-1.5">日付</label>
                 <input

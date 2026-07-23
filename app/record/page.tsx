@@ -3,10 +3,11 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { toJstIso, todayJst, nowTimeJst } from "@/lib/datetime";
+import { CARE_GROUPS, resolveCycle, type CareCycles } from "@/lib/care";
 import NoCatNotice from "@/components/NoCatNotice";
 import Link from "next/link";
 
-interface Cat { id: string; name: string }
+interface Cat { id: string; name: string; careCycles?: CareCycles | null }
 type Tab = "feeding" | "toilet" | "weight" | "care";
 
 const TABS: { key: Tab; emoji: string; label: string }[] = [
@@ -388,34 +389,6 @@ function SuccessBanner({ emoji, message }: { emoji: string; message: string }) {
 
 interface CareLog { id: string; type: string; doneAt: string; user: { name: string } }
 
-const CARE_GROUPS: { label: string; items: { key: string; emoji: string; cycle?: number }[] }[] = [
-  {
-    label: "日々のケア",
-    items: [
-      { key: "おもちゃ遊び", emoji: "🪀" },
-      { key: "爪切り", emoji: "✂️" },
-      { key: "歯磨き", emoji: "🦷" },
-    ],
-  },
-  {
-    label: "定期ケア",
-    items: [
-      { key: "ブラッシング", emoji: "🪮" },
-      { key: "シャンプー", emoji: "🛁" },
-      { key: "ノミ・ダニ予防", emoji: "🛡️" },
-      { key: "爪バリバリ交換", emoji: "📦" },
-    ],
-  },
-  {
-    label: "環境メンテ",
-    items: [
-      { key: "猫砂掃除", emoji: "🧹", cycle: 25 },
-      { key: "水交換", emoji: "💧", cycle: 7 },
-      { key: "トイレシート交換", emoji: "📋", cycle: 4 },
-    ],
-  },
-];
-
 function daysSince(iso: string) {
   return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
 }
@@ -526,7 +499,8 @@ function CareForm({ cat }: { cat: Cat }) {
       <div className="card overflow-hidden divide-y divide-stone-50">
         {group.items.map((item) => {
           const done = justDone[item.key];
-          const { text, overdue, nextDue } = lastLabel(item.key, item.cycle);
+          const cycle = resolveCycle(item, cat.careCycles);
+          const { text, overdue, nextDue } = lastLabel(item.key, cycle);
           return (
             <div key={item.key} className="px-4 py-3 flex items-center gap-3">
               <span className="text-xl w-7 text-center">{item.emoji}</span>
@@ -535,7 +509,7 @@ function CareForm({ cat }: { cat: Cat }) {
                 <p className={`text-xs ${overdue ? "text-amber-400 font-medium" : "text-stone-400"}`}>
                   {nextDue
                     ? `次回 ${nextDue}${overdue ? "・超過" : ""}`
-                    : text + (item.cycle ? `（${item.cycle}日ごと）` : "")}
+                    : text + (cycle ? `（${cycle}日ごと）` : "")}
                 </p>
               </div>
               <button

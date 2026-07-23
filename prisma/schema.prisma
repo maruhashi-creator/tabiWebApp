@@ -45,6 +45,7 @@ model Cat {
   photo           String?
   birthday        DateTime?
   breed           String?
+  careCycles      Json?           // per-item care interval overrides, keyed by care item name
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   users           User[]

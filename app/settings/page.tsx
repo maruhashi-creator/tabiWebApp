@@ -4,8 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { format } from "date-fns";
 import { signOut, useSession } from "next-auth/react";
+import {
+  CONFIGURABLE_CARE_GROUPS,
+  resolveCycle,
+  MIN_CARE_CYCLE,
+  MAX_CARE_CYCLE,
+  type CareCycles,
+} from "@/lib/care";
 
-interface Cat { id: string; name: string; breed: string | null; birthday: string | null; photo: string | null }
+interface Cat { id: string; name: string; breed: string | null; birthday: string | null; photo: string | null; careCycles: CareCycles | null }
 
 export default function SettingsPage() {
   const { data: session } = useSession();
@@ -24,6 +31,20 @@ export default function SettingsPage() {
   const [joinCode, setJoinCode] = useState("");
   const [joinLoading, setJoinLoading] = useState(false);
   const [joinResult, setJoinResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const [careInputs, setCareInputs] = useState<Record<string, string>>({});
+  const [careSaving, setCareSaving] = useState(false);
+  const [careSaved, setCareSaved] = useState(false);
+
+  // Seed each configurable item's field with its effective interval (saved override or default).
+  function hydrateCareInputs(c: Cat) {
+    const next: Record<string, string> = {};
+    for (const group of CONFIGURABLE_CARE_GROUPS) {
+      for (const item of group.items) {
+        next[item.key] = String(resolveCycle(item, c.careCycles) ?? "");
+      }
+    }
+    setCareInputs(next);
+  }
 
   useEffect(() => {
     fetch("/api/cat").then((r) => r.json()).then((cats) => {
@@ -34,9 +55,36 @@ export default function SettingsPage() {
         setBreed(c.breed ?? "");
         setBirthday(c.birthday ? format(new Date(c.birthday), "yyyy-MM-dd") : "");
         setPhoto(c.photo ?? null);
+        hydrateCareInputs(c);
       }
     }).catch(() => {}).finally(() => setLoaded(true));
   }, []);
+
+  async function handleSaveCareCycles() {
+    if (!cat) return;
+    setCareSaving(true);
+    try {
+      const careCycles: CareCycles = {};
+      for (const [key, value] of Object.entries(careInputs)) {
+        const n = Math.round(Number(value));
+        if (Number.isFinite(n) && n >= MIN_CARE_CYCLE && n <= MAX_CARE_CYCLE) careCycles[key] = n;
+      }
+      const res = await fetch("/api/cat", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: cat.id, careCycles }),
+      });
+      if (res.ok) {
+        const updated: Cat = await res.json();
+        setCat(updated);
+        hydrateCareInputs(updated);
+        setCareSaved(true);
+        setTimeout(() => setCareSaved(false), 2000);
+      }
+    } finally {
+      setCareSaving(false);
+    }
+  }
 
   function compressImage(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -94,7 +142,7 @@ export default function SettingsPage() {
         // 猫データを再取得
         const cats = await fetch("/api/cat").then((r) => r.json());
         const c = cats[0];
-        if (c) { setCat(c); setName(c.name); setBreed(c.breed ?? ""); setBirthday(c.birthday ? format(new Date(c.birthday), "yyyy-MM-dd") : ""); setPhoto(c.photo ?? null); }
+        if (c) { setCat(c); setName(c.name); setBreed(c.breed ?? ""); setBirthday(c.birthday ? format(new Date(c.birthday), "yyyy-MM-dd") : ""); setPhoto(c.photo ?? null); hydrateCareInputs(c); }
       } else {
         setJoinResult({ ok: false, message: data.error ?? "参加に失敗しました" });
       }
@@ -268,6 +316,46 @@ export default function SettingsPage() {
             </p>
           )}
         </div>
+
+        {/* ケアの間隔設定 */}
+        {cat && (
+          <div className="card p-5 space-y-4">
+            <div>
+              <p className="text-xs font-semibold text-stone-400">ケアの間隔</p>
+              <p className="text-[11px] text-stone-400 mt-1">「次回」の目安に使われます。何日ごとに行うか設定してね。</p>
+            </div>
+            {CONFIGURABLE_CARE_GROUPS.map((group) => (
+              <div key={group.label} className="space-y-2">
+                <p className="text-[11px] font-semibold text-stone-400 px-0.5">{group.label}</p>
+                {group.items.map((item) => (
+                  <div key={item.key} className="flex items-center gap-3">
+                    <span className="text-lg w-6 text-center">{item.emoji}</span>
+                    <span className="flex-1 text-sm text-stone-700 min-w-0">{item.key}</span>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={MIN_CARE_CYCLE}
+                      max={MAX_CARE_CYCLE}
+                      step={1}
+                      value={careInputs[item.key] ?? ""}
+                      onChange={(e) => setCareInputs((p) => ({ ...p, [item.key]: e.target.value }))}
+                      className="w-16 border border-stone-200 rounded-lg px-2 py-1.5 text-sm text-center bg-white focus:outline-none focus:border-primary shrink-0"
+                    />
+                    <span className="text-xs text-stone-400 shrink-0">日ごと</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={handleSaveCareCycles}
+              disabled={careSaving}
+              className={`btn-primary w-full py-3 text-sm transition-all ${careSaved ? "opacity-80" : ""}`}
+            >
+              {careSaved ? "保存しました ✓" : careSaving ? "保存中..." : "間隔を保存する"}
+            </button>
+          </div>
+        )}
 
         {/* ログインユーザー */}
         <div className="card p-5 space-y-3">

@@ -14,6 +14,16 @@
 
 ## 主な変更履歴
 
+### ケアの間隔を設定で変更可能に
+
+「定期ケア」「環境メンテ」の各項目の間隔（◯日ごと）を猫ごとに設定できるようにした。
+
+- **スキーマ**: `Cat` に `careCycles Json?`（nullable）を追加。項目名→日数のマップ。`prisma db push` で本番 Neon DB に列追加（additive）。
+- **新規:** `lib/care.ts`。ケア項目リスト・既定間隔・`resolveCycle()`（保存値 > 既定）・設定可能グループを集約。記録画面と設定画面で共有（従来 `record/page.tsx` にハードコードしていた `CARE_GROUPS` を移設）。
+- **`/api/cat`**: POST/PATCH で `careCycles` を受け取り、`sanitizeCareCycles()` で 1〜365 の整数のみ通す。
+- **設定画面**: 「アカウント」の上に「ケアの間隔」ボックスを追加。定期ケア4項目・環境メンテ3項目を「◯日ごと」で編集し保存。
+- **記録画面**: ケアタブが `cat.careCycles` を反映。定期ケア項目も間隔設定により「次回◯月◯日」表示になる。
+
 ### UX レビュー「軽微」項目の対応
 
 `docs/ux-review-2026-07-21.md` の「軽微」を一括対応。
@@ -200,7 +210,7 @@ Prismaに `CareLog` モデルを追加し `prisma db push` 済み。
 |---|---|---|
 | `/api/cat` | GET | ログインユーザーの猫一覧取得 |
 | `/api/cat` | POST | 猫新規作成（ログインユーザーに紐付け） |
-| `/api/cat` | PATCH | プロフィール更新 |
+| `/api/cat` | PATCH | プロフィール更新・ケア間隔（careCycles）更新 |
 | `/api/feeding` | GET / POST | 給餌ログ |
 | `/api/toilet` | GET / POST | トイレログ |
 | `/api/weight` | GET / POST | 体重ログ |

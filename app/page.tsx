@@ -230,7 +230,7 @@ export default function Dashboard() {
             <QuickButton href="/feeding" emoji="🍚" label="ごはん" done={fedDone} />
             <QuickButton href="/toilet" emoji="🚿" label="トイレ" done={urineDone && fecesDone} />
             <QuickButton href="/weight" emoji="⚖️" label="体重" done={false} />
-            <QuickButton href="/record" emoji="🐾" label="ケア" done={false} />
+            <QuickButton href="/record?tab=care" emoji="🐾" label="ケア" done={false} />
           </div>
         </div>
 

@@ -30,6 +30,12 @@ export default function RecordPage() {
       .finally(() => setCatLoading(false));
   }, []);
 
+  // Allow deep-linking to a tab, e.g. /record?tab=care from the home shortcut.
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get("tab");
+    if (t && TABS.some((tab) => tab.key === t)) setTab(t as Tab);
+  }, []);
+
   if (catLoading) return <div className="min-h-screen bg-canvas" />;
   if (!cat) return <NoCatNotice />;
 

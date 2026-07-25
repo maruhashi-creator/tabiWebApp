@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { format, subDays } from "date-fns";
 import { catName } from "@/lib/messages";
+import NoCatNotice from "@/components/NoCatNotice";
 
 interface Cat { id: string; name: string }
 interface WeightLog { id: string; weight: number; measuredAt: string }
@@ -38,6 +39,7 @@ export default function GraphPage() {
   }, []);
 
   if (loading) return <div className="min-h-screen bg-canvas" />;
+  if (!cat) return <NoCatNotice />;
 
   return (
     <div className="min-h-screen bg-canvas pb-24">

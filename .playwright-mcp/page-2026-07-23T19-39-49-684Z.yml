@@ -1,0 +1,17 @@
+- navigation [ref=f6e3]:
+  - generic [ref=f6e4]:
+    - button "🏠 ホーム" [ref=f6e5] [cursor=pointer]:
+      - generic [ref=f6e6]: 🏠
+      - generic [ref=f6e7]: ホーム
+    - button "✏️ 記録" [ref=f6e8] [cursor=pointer]:
+      - generic [ref=f6e9]: ✏️
+      - generic [ref=f6e10]: 記録
+    - button "📈 グラフ" [ref=f6e11] [cursor=pointer]:
+      - generic [ref=f6e12]: 📈
+      - generic [ref=f6e13]: グラフ
+    - button "📅 カレンダー" [ref=f6e14] [cursor=pointer]:
+      - generic [ref=f6e15]: 📅
+      - generic [ref=f6e16]: カレンダー
+    - button "⚙️ 設定" [ref=f6e17] [cursor=pointer]:
+      - generic [ref=f6e18]: ⚙️
+      - generic [ref=f6e19]: 設定

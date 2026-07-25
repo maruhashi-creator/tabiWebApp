@@ -1,0 +1,98 @@
+- generic [ref=f5e1]:
+  - generic [ref=f5e2]:
+    - banner [ref=f5e20]:
+      - generic [ref=f5e21]:
+        - generic [ref=f5e22]:
+          - heading "カレンダー" [level=1] [ref=f5e23]
+          - paragraph [ref=f5e24]: たびの記録カレンダー
+        - generic [ref=f5e25]:
+          - button "‹" [ref=f5e26] [cursor=pointer]
+          - generic [ref=f5e27]: 2026年7月
+          - button "›" [ref=f5e28] [cursor=pointer]
+    - main [ref=f5e29]:
+      - generic [ref=f5e30]:
+        - generic [ref=f5e31]: ごはん
+        - generic [ref=f5e34]: トイレ
+        - generic [ref=f5e37]: 体重
+        - generic [ref=f5e40]: お薬
+        - generic [ref=f5e43]: ケア
+      - generic [ref=f5e46]:
+        - generic [ref=f5e47]:
+          - generic [ref=f5e48]: 日
+          - generic [ref=f5e49]: 月
+          - generic [ref=f5e50]: 火
+          - generic [ref=f5e51]: 水
+          - generic [ref=f5e52]: 木
+          - generic [ref=f5e53]: 金
+          - generic [ref=f5e54]: 土
+        - generic [ref=f5e55]:
+          - button "1" [ref=f5e59] [cursor=pointer]
+          - button "2" [ref=f5e63] [cursor=pointer]
+          - button "3" [ref=f5e68] [cursor=pointer]
+          - button "4" [ref=f5e72] [cursor=pointer]
+          - button "5" [ref=f5e77] [cursor=pointer]
+          - button "6" [ref=f5e82] [cursor=pointer]
+          - button "7" [ref=f5e86] [cursor=pointer]
+          - button "8" [ref=f5e90] [cursor=pointer]
+          - button "9" [ref=f5e95] [cursor=pointer]
+          - button "10" [ref=f5e100] [cursor=pointer]
+          - button "11" [ref=f5e104] [cursor=pointer]
+          - button "12" [ref=f5e110] [cursor=pointer]
+          - button "13" [ref=f5e114] [cursor=pointer]
+          - button "14" [ref=f5e118] [cursor=pointer]
+          - button "15" [ref=f5e123] [cursor=pointer]
+          - button "16" [ref=f5e127] [cursor=pointer]
+          - button "17" [ref=f5e131] [cursor=pointer]
+          - button "18" [ref=f5e135] [cursor=pointer]
+          - button "19" [ref=f5e139] [cursor=pointer]
+          - button "20" [ref=f5e143] [cursor=pointer]
+          - button "21" [ref=f5e149] [cursor=pointer]
+          - button "22" [ref=f5e153] [cursor=pointer]
+          - button "23" [ref=f5e158] [cursor=pointer]
+          - button "24" [active] [ref=f5e163] [cursor=pointer]
+          - button "25" [ref=f5e167] [cursor=pointer]
+          - button "26" [ref=f5e169] [cursor=pointer]
+          - button "27" [ref=f5e171] [cursor=pointer]
+          - button "28" [ref=f5e173] [cursor=pointer]
+          - button "29" [ref=f5e175] [cursor=pointer]
+          - button "30" [ref=f5e177] [cursor=pointer]
+          - button "31" [ref=f5e179] [cursor=pointer]
+    - generic [ref=f5e184]:
+      - generic [ref=f5e187]:
+        - paragraph [ref=f5e188]: 7月24日(金)
+        - button "閉じる" [ref=f5e189] [cursor=pointer]: ×
+      - generic [ref=f5e191]:
+        - generic [ref=f5e193]:
+          - generic [ref=f5e194]: ごはん
+          - generic [ref=f5e197]:
+            - text: カリカリ
+            - generic [ref=f5e198]: 7g
+        - generic [ref=f5e202]:
+          - generic [ref=f5e203]: 🥣
+          - generic [ref=f5e204]:
+            - paragraph [ref=f5e205]:
+              - text: カリカリ
+              - generic [ref=f5e206]: 7g
+            - paragraph [ref=f5e207]: おとうさん
+          - paragraph [ref=f5e208]: 04:38
+          - generic [ref=f5e209]:
+            - button "編集" [ref=f5e210] [cursor=pointer]: ✏
+            - button "削除" [ref=f5e211] [cursor=pointer]: ×
+  - navigation [ref=f5e3]:
+    - generic [ref=f5e4]:
+      - button "🏠 ホーム" [ref=f5e5] [cursor=pointer]:
+        - generic [ref=f5e6]: 🏠
+        - generic [ref=f5e7]: ホーム
+      - button "✏️ 記録" [ref=f5e8] [cursor=pointer]:
+        - generic [ref=f5e9]: ✏️
+        - generic [ref=f5e10]: 記録
+      - button "📈 グラフ" [ref=f5e11] [cursor=pointer]:
+        - generic [ref=f5e12]: 📈
+        - generic [ref=f5e13]: グラフ
+      - button "📅 カレンダー" [ref=f5e14] [cursor=pointer]:
+        - generic [ref=f5e15]: 📅
+        - generic [ref=f5e16]: カレンダー
+      - button "⚙️ 設定" [ref=f5e17] [cursor=pointer]:
+        - generic [ref=f5e18]: ⚙️
+        - generic [ref=f5e19]: 設定
+  - alert [ref=f5e182]

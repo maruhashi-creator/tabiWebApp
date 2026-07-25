@@ -383,8 +383,9 @@ function WeightForm({ cat }: { cat: Cat }) {
 }
 
 function SuccessBanner({ emoji, message }: { emoji: string; message: string }) {
+  // Center on the full screen (kept below the bottom nav's z-50 so it stays visible).
   return (
-    <div className="flex flex-col items-center justify-center py-16 gap-4">
+    <div className="fixed inset-0 z-40 flex flex-col items-center justify-center gap-4 bg-canvas px-6 text-center">
       <span className="text-6xl animate-bounce">{emoji}</span>
       <p className="text-base font-bold text-stone-700">{message}</p>
     </div>

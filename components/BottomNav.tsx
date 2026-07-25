@@ -10,6 +10,9 @@ const items = [
   { href: "/settings", label: "設定", emoji: "⚙️" },
 ];
 
+// The single-form record screens are reached from the home shortcuts but belong to 記録.
+const RECORD_PATHS = ["/record", "/feeding", "/toilet", "/weight", "/medication"];
+
 export function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
@@ -28,7 +31,9 @@ export function BottomNav() {
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-100 safe-area-pb z-50">
       <div className="max-w-lg mx-auto flex">
         {items.map((item) => {
-          const active = pathname === item.href;
+          const active = item.href === "/record"
+            ? RECORD_PATHS.includes(pathname)
+            : pathname === item.href;
           return (
             <button
               key={item.href}

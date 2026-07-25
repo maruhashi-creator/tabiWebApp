@@ -1,0 +1,51 @@
+- generic [active] [ref=f8e1]:
+  - generic [ref=f8e2]:
+    - banner [ref=f8e3]:
+      - generic [ref=f8e4]:
+        - button "← 戻る" [ref=f8e5] [cursor=pointer]
+        - generic [ref=f8e6]:
+          - heading "ねこのトイレ" [level=1] [ref=f8e7]
+          - paragraph
+    - main [ref=f8e8]:
+      - generic [ref=f8e9]:
+        - generic [ref=f8e10]:
+          - generic [ref=f8e11]: 種類
+          - generic [ref=f8e12]:
+            - button "💧" [ref=f8e13] [cursor=pointer]
+            - button "🌼" [ref=f8e15] [cursor=pointer]
+        - generic [ref=f8e17]:
+          - generic [ref=f8e18]: 回数
+          - generic [ref=f8e19]:
+            - button "−" [ref=f8e20] [cursor=pointer]
+            - generic [ref=f8e21]: "1"
+            - button "＋" [ref=f8e22] [cursor=pointer]
+          - paragraph [ref=f8e23]: 回
+        - generic [ref=f8e24]:
+          - generic [ref=f8e25]:
+            - generic [ref=f8e26]:
+              - generic [ref=f8e27]: 日付
+              - textbox [ref=f8e28]: 2026-07-24
+            - generic [ref=f8e29]:
+              - generic [ref=f8e30]: 時刻
+              - textbox [ref=f8e31]: 04:40
+          - generic [ref=f8e32]:
+            - generic [ref=f8e33]: 状態メモ（任意）
+            - textbox "いつもより多い、少ない、色が違う など" [ref=f8e34]
+        - button "記録する" [ref=f8e35] [cursor=pointer]
+  - navigation [ref=f8e36]:
+    - generic [ref=f8e37]:
+      - button "🏠 ホーム" [ref=f8e38] [cursor=pointer]:
+        - generic [ref=f8e39]: 🏠
+        - generic [ref=f8e40]: ホーム
+      - button "✏️ 記録" [ref=f8e41] [cursor=pointer]:
+        - generic [ref=f8e42]: ✏️
+        - generic [ref=f8e43]: 記録
+      - button "📈 グラフ" [ref=f8e44] [cursor=pointer]:
+        - generic [ref=f8e45]: 📈
+        - generic [ref=f8e46]: グラフ
+      - button "📅 カレンダー" [ref=f8e47] [cursor=pointer]:
+        - generic [ref=f8e48]: 📅
+        - generic [ref=f8e49]: カレンダー
+      - button "⚙️ 設定" [ref=f8e50] [cursor=pointer]:
+        - generic [ref=f8e51]: ⚙️
+        - generic [ref=f8e52]: 設定

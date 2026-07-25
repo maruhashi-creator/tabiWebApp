@@ -4,6 +4,22 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
+// Return where to go after login: the callbackUrl if it is same-origin, else home.
+// Reducing to a relative path (and rejecting other origins / /login) blocks open redirects.
+function safeCallbackUrl(): string {
+  if (typeof window === "undefined") return "/";
+  const raw = new URLSearchParams(window.location.search).get("callbackUrl");
+  if (!raw) return "/";
+  try {
+    const url = new URL(raw, window.location.origin);
+    if (url.origin !== window.location.origin) return "/";
+    const dest = url.pathname + url.search + url.hash;
+    return dest.startsWith("/login") ? "/" : dest;
+  } catch {
+    return "/";
+  }
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -36,7 +52,7 @@ export default function LoginPage() {
     try {
       const res = await signIn("credentials", { identifier, password, redirect: false });
       if (res?.ok) {
-        router.push("/");
+        router.push(safeCallbackUrl());
       } else {
         setError("メールアドレス・携帯番号またはパスワードが正しくありません");
       }
@@ -90,7 +106,7 @@ export default function LoginPage() {
         redirect: false,
       });
       if (res?.ok) {
-        router.push("/");
+        router.push(safeCallbackUrl());
       } else {
         setError("ゲストログインに失敗しました");
       }

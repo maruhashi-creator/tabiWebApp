@@ -14,6 +14,12 @@
 
 ## 主な変更履歴
 
+### 導線検証(nav-check)で見つかった遷移不具合の修正
+
+- **ログイン後に元ページへ戻る**: `middleware.ts` を `withAuth({ pages: { signIn: "/login" } })` に変更し、未ログイン時に `/api/auth/signin` を経由せず直接 `/login?callbackUrl=<相対パス>` へ飛ばす（従来は2段リダイレクト＋callbackUrl のホストが `localhost:3000` 固定になる問題があった）。`app/login/page.tsx` に `safeCallbackUrl()`（同一オリジンの相対パスのみ許可＝オープンリダイレクト対策）を追加し、ログイン/ゲストログイン成功時にそこへ戻す。新規登録は従来どおり `/settings`。
+- **BottomNav の現在地**: `/feeding` `/toilet` `/weight` `/medication` 滞在中も「記録」タブがハイライトされるよう `RECORD_PATHS` で判定（`components/BottomNav.tsx`）。
+- **`/graph` の空状態**: 猫未登録時に他画面と同様 `NoCatNotice` を表示（従来はフォールバック表示のみだった）。
+
 ### ケアの間隔を設定で変更可能に
 
 「定期ケア」「環境メンテ」の各項目の間隔（◯日ごと）を猫ごとに設定できるようにした。

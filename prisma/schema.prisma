@@ -8,21 +8,41 @@ datasource db {
 }
 
 model User {
-  id              String          @id @default(cuid())
-  email           String?         @unique
-  phone           String?         @unique
-  password        String
-  name            String
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  cats            Cat[]
-  feedingLogs     FeedingLog[]
-  toiletLogs      ToiletLog[]
-  weightLogs      WeightLog[]
-  medicationLogs  MedicationLog[]
-  careLogs        CareLog[]
-  invitesCreated  InviteCode[]    @relation("InviteCreated")
-  invitesUsed     InviteCode[]    @relation("InviteUsed")
+  id                String             @id @default(cuid())
+  email             String?            @unique
+  phone             String?            @unique
+  password          String
+  name              String
+  zipcode           String?            // 停電アラート対象エリアの郵便番号(数字7桁, 正規化済み)
+  outageAlert       Boolean            @default(false)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  cats              Cat[]
+  feedingLogs       FeedingLog[]
+  toiletLogs        ToiletLog[]
+  weightLogs        WeightLog[]
+  medicationLogs    MedicationLog[]
+  careLogs          CareLog[]
+  invitesCreated    InviteCode[]       @relation("InviteCreated")
+  invitesUsed       InviteCode[]       @relation("InviteUsed")
+  pushSubscriptions PushSubscription[]
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+// 停電の「新規発生」を判定するためのエリア状態。areaKey は正規化郵便番号。
+model OutageState {
+  areaKey   String   @id
+  active    Boolean  @default(false)
+  updatedAt DateTime @updatedAt
 }
 
 model InviteCode {

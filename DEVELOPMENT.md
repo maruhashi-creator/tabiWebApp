@@ -14,6 +14,18 @@
 
 ## 主な変更履歴
 
+### 停電アラート機能（Web Push, MVP）
+
+設定した郵便番号エリアで停電が発生したら登録端末へプッシュ通知する。要件は `docs/design/outage-alert/requirements.md`。
+
+- **方針（合意済み）**: 停電判定はまずモック（差し替え可能なIF）、通知は Web Push（PWA前提）、発生時のみ通知（復旧通知なし）。
+- **スキーマ**: `User.zipcode` / `User.outageAlert` を追加、`PushSubscription`（端末ごと購読）・`OutageState`（エリア×最終状態、新規発生判定用）を新設。`prisma db push` で本番反映。
+- **通知ロジック**: `lib/webpush.ts`（VAPID送信・無効購読の自動削除）、`lib/outage.ts`（`fetchActiveOutageAreas` モック＋`runOutageCheck` で false→true の立ち上がりのみ通知）。
+- **API**: `/api/push/subscribe`(POST/DELETE)、`/api/user/outage`(GET/PATCH, 本人のみ・郵便番号は数字7桁正規化)、`/api/cron/outage`(GET/POST, `CRON_SECRET` 保護、`simulate` で手動発火)。
+- **クライアント**: `public/sw.js`（push/notificationclick）、`lib/push-client.ts`（SW登録・購読・解除）。設定画面「アカウント」の上に「停電アラート」ボックス（郵便番号＋トグル＋iOS注意書き）。
+- **インフラ**: `vercel.json` に cron（5分毎 `/api/cron/outage`）。env は `VAPID_PUBLIC_KEY`/`NEXT_PUBLIC_VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`/`VAPID_SUBJECT`/`CRON_SECRET`（ローカルは `.env.local`、**本番は Vercel の環境変数に要設定**）。
+- **未対応/前提**: 実データ源の接続（モックのまま）、iOS はホーム画面追加PWAのみ受信、実機PWAでの通知到達は要確認。ローカルでは cron 認可・立ち上がり検出・重複防止・郵便番号保存を検証済み（実push送信は購読端末が無いため未送信）。
+
 ### 導線検証(nav-check)で見つかった遷移不具合の修正
 
 - **ログイン後に元ページへ戻る**: `middleware.ts` を `withAuth({ pages: { signIn: "/login" } })` に変更し、未ログイン時に `/api/auth/signin` を経由せず直接 `/login?callbackUrl=<相対パス>` へ飛ばす（従来は2段リダイレクト＋callbackUrl のホストが `localhost:3000` 固定になる問題があった）。`app/login/page.tsx` に `safeCallbackUrl()`（同一オリジンの相対パスのみ許可＝オープンリダイレクト対策）を追加し、ログイン/ゲストログイン成功時にそこへ戻す。新規登録は従来どおり `/settings`。
@@ -223,6 +235,9 @@ Prismaに `CareLog` モデルを追加し `prisma db push` 済み。
 | `/api/medication` | GET / POST | 投薬ログ |
 | `/api/care` | GET / POST | ケアログ |
 | `/api/register` | POST | 新規ユーザー登録 |
+| `/api/user/outage` | GET / PATCH | 停電アラートの郵便番号・ON/OFF（本人のみ） |
+| `/api/push/subscribe` | POST / DELETE | Web Push 購読の登録・解除 |
+| `/api/cron/outage` | GET / POST | 停電チェック→新規発生に通知（`CRON_SECRET` 保護、`simulate` 可） |
 
 `/api/feeding`, `/api/toilet`, `/api/care` はクエリパラメータ `from` / `to` による日付範囲絞り込みに対応。
 

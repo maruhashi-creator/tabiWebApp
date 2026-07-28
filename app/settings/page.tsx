@@ -11,6 +11,7 @@ import {
   MAX_CARE_CYCLE,
   type CareCycles,
 } from "@/lib/care";
+import { pushSupported, subscribeToPush, unsubscribeFromPush } from "@/lib/push-client";
 
 interface Cat { id: string; name: string; breed: string | null; birthday: string | null; photo: string | null; careCycles: CareCycles | null }
 
@@ -34,6 +35,10 @@ export default function SettingsPage() {
   const [careInputs, setCareInputs] = useState<Record<string, string>>({});
   const [careSaving, setCareSaving] = useState(false);
   const [careSaved, setCareSaved] = useState(false);
+  const [zipcode, setZipcode] = useState("");
+  const [alertOn, setAlertOn] = useState(false);
+  const [outageBusy, setOutageBusy] = useState(false);
+  const [outageMsg, setOutageMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   // Seed each configurable item's field with its effective interval (saved override or default).
   function hydrateCareInputs(c: Cat) {
@@ -59,6 +64,80 @@ export default function SettingsPage() {
       }
     }).catch(() => {}).finally(() => setLoaded(true));
   }, []);
+
+  useEffect(() => {
+    fetch("/api/user/outage")
+      .then((r) => r.json())
+      .then((d) => {
+        setZipcode(d.zipcode ?? "");
+        setAlertOn(!!d.outageAlert);
+      })
+      .catch(() => {});
+  }, []);
+
+  async function saveOutage(next: { zipcode?: string; outageAlert?: boolean }) {
+    const res = await fetch("/api/user/outage", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(next),
+    });
+    return res;
+  }
+
+  async function handleSaveZipcode() {
+    setOutageBusy(true);
+    setOutageMsg(null);
+    try {
+      const res = await saveOutage({ zipcode });
+      if (res.ok) {
+        const d = await res.json();
+        setZipcode(d.zipcode ?? "");
+        setOutageMsg({ ok: true, text: "保存しました ✓" });
+      } else {
+        const d = await res.json().catch(() => null);
+        setOutageMsg({ ok: false, text: d?.error ?? "保存できませんでした" });
+      }
+    } finally {
+      setOutageBusy(false);
+    }
+  }
+
+  async function handleToggleAlert() {
+    setOutageBusy(true);
+    setOutageMsg(null);
+    try {
+      if (!alertOn) {
+        // Turning on: register push before flipping the server flag.
+        if (!zipcode) { setOutageMsg({ ok: false, text: "先に郵便番号を保存してね" }); return; }
+        const result = await subscribeToPush();
+        if (result === "unsupported") {
+          setOutageMsg({ ok: false, text: "この端末は通知に対応していないみたい。iPhoneはホーム画面に追加してね" });
+          return;
+        }
+        if (result === "denied") {
+          setOutageMsg({ ok: false, text: "通知が許可されていないよ。ブラウザの設定から許可してね" });
+          return;
+        }
+        if (result === "error") {
+          setOutageMsg({ ok: false, text: "通知の登録に失敗したよ" });
+          return;
+        }
+        const res = await saveOutage({ outageAlert: true });
+        if (res.ok) { setAlertOn(true); setOutageMsg({ ok: true, text: "停電アラートをONにしたよ ✓" }); }
+        else setOutageMsg({ ok: false, text: "保存できませんでした" });
+      } else {
+        // Turning off: drop the flag, then remove the subscription.
+        const res = await saveOutage({ outageAlert: false });
+        if (res.ok) {
+          await unsubscribeFromPush();
+          setAlertOn(false);
+          setOutageMsg({ ok: true, text: "停電アラートをOFFにしたよ" });
+        } else setOutageMsg({ ok: false, text: "保存できませんでした" });
+      }
+    } finally {
+      setOutageBusy(false);
+    }
+  }
 
   async function handleSaveCareCycles() {
     if (!cat) return;
@@ -315,6 +394,58 @@ export default function SettingsPage() {
               {joinResult.message}
             </p>
           )}
+        </div>
+
+        {/* 停電アラート */}
+        <div className="card p-5 space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold text-stone-400">停電アラート</p>
+              <p className="text-[11px] text-stone-400 mt-1">登録エリアで停電が発生したら通知でお知らせします。</p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={alertOn}
+              aria-label="停電アラート"
+              disabled={outageBusy}
+              onClick={handleToggleAlert}
+              className={`relative w-12 h-7 rounded-full shrink-0 transition-colors disabled:opacity-50 ${alertOn ? "bg-primary" : "bg-stone-200"}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow transition-transform ${alertOn ? "translate-x-5" : ""}`} />
+            </button>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-stone-400 mb-1.5">郵便番号</label>
+            <div className="grid grid-cols-[1fr_auto] gap-2 [&>*]:min-w-0">
+              <input
+                type="text"
+                inputMode="numeric"
+                value={zipcode}
+                onChange={(e) => setZipcode(e.target.value)}
+                placeholder="1000001"
+                maxLength={8}
+                className="input"
+              />
+              <button
+                type="button"
+                onClick={handleSaveZipcode}
+                disabled={outageBusy}
+                className="btn-primary px-4 text-sm shrink-0 disabled:opacity-50"
+              >
+                保存
+              </button>
+            </div>
+          </div>
+
+          {outageMsg && (
+            <p className={`text-xs px-1 ${outageMsg.ok ? "text-emerald-500" : "text-red-400"}`}>{outageMsg.text}</p>
+          )}
+
+          <p className="text-[11px] text-stone-400 leading-relaxed">
+            ⚠ iPhone は「ホーム画面に追加」したアプリからのみ通知が届きます（iOS 16.4 以降）。停電時は回線状況により通知が遅れる/届かない場合があります。
+          </p>
         </div>
 
         {/* ケアの間隔設定 */}

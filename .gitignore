@@ -9,3 +9,6 @@ tsconfig.tsbuildinfo
 # Playwright MCP artifacts
 .playwright-mcp/
 .vercel
+
+# graphify skill output
+graphify-out/
